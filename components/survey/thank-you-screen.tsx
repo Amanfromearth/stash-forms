@@ -1,7 +1,6 @@
 "use client"
 
-import { HugeiconsIcon } from "@hugeicons/react"
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons"
+import { useState } from "react"
 import type { FormConfig } from "@/lib/form-config"
 
 interface ThankYouScreenProps {
@@ -13,6 +12,27 @@ export function ThankYouScreen({
   config: _config,
   onReset,
 }: ThankYouScreenProps) {
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = async () => {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Global Investing Survey",
+          text: "Help us understand how India thinks about global investing — takes under 3 minutes!",
+          url,
+        })
+      } catch {
+        /* user cancelled */
+      }
+    } else {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   return (
     <div className="flex w-full max-w-2xl flex-col items-center gap-8 text-center">
       <div
@@ -43,15 +63,26 @@ export function ThankYouScreen({
         </p>
       </div>
 
-      {onReset && (
+      <div
+        className="flex animate-in flex-col items-center gap-3 delay-500 duration-500 fill-mode-both fade-in"
+        style={{ animationTimingFunction: "var(--ease-out-quint)" }}
+      >
         <button
-          onClick={onReset}
-          className="w-fit animate-in text-sm text-muted-foreground underline underline-offset-4 transition-colors delay-500 duration-500 fill-mode-both fade-in hover:text-foreground"
-          style={{ animationTimingFunction: "var(--ease-out-quint)" }}
+          onClick={handleShare}
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-accent"
         >
-          Submit another response
+          {copied ? "✓ Link copied!" : "📤 Share this survey"}
         </button>
-      )}
+
+        {onReset && (
+          <button
+            onClick={onReset}
+            className="w-fit text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+          >
+            Submit another response
+          </button>
+        )}
+      </div>
     </div>
   )
 }

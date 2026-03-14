@@ -122,6 +122,14 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
         setFieldError("This field is required")
         return
       }
+
+      if (currentQuestion.type === "email" && typeof answer === "string") {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(answer)) {
+          setFieldError("Please enter a valid email address")
+          return
+        }
+      }
     }
 
     setFieldError(null)

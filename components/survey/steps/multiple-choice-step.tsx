@@ -19,7 +19,6 @@ export function MultipleChoiceStep({
   onChange,
   onAdvance,
 }: MultipleChoiceStepProps) {
-  const initialValueRef = useRef(value)
   const userSelected = useRef(false)
 
   useEffect(() => {
@@ -38,6 +37,7 @@ export function MultipleChoiceStep({
   )
 
   const [focusedIndex, setFocusedIndex] = useState(0)
+  const [usingKeyboard, setUsingKeyboard] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -45,11 +45,14 @@ export function MultipleChoiceStep({
       if (!isNaN(num) && num >= 1 && num <= question.options.length) {
         e.preventDefault()
         e.stopImmediatePropagation()
+        setUsingKeyboard(true)
+        setFocusedIndex(num - 1)
         handleSelect(question.options[num - 1])
         return
       }
       if (e.key === "ArrowDown") {
         e.preventDefault()
+        setUsingKeyboard(true)
         setFocusedIndex((prev) =>
           prev < question.options.length - 1 ? prev + 1 : 0
         )
@@ -57,6 +60,7 @@ export function MultipleChoiceStep({
       }
       if (e.key === "ArrowUp") {
         e.preventDefault()
+        setUsingKeyboard(true)
         setFocusedIndex((prev) =>
           prev > 0 ? prev - 1 : question.options.length - 1
         )
@@ -72,9 +76,19 @@ export function MultipleChoiceStep({
     return () => window.removeEventListener("keydown", handleKeyDown, true)
   }, [question.options, handleSelect, focusedIndex])
 
+  const handleMouseEnter = (index: number) => {
+    setUsingKeyboard(false)
+    setFocusedIndex(index)
+  }
+
+  const handleMouseLeave = () => {
+    if (!usingKeyboard) {
+      setFocusedIndex(-1)
+    }
+  }
+
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
-      {/* Question label */}
       <div className="flex flex-col gap-2">
         <h2 className="font-heading text-2xl leading-tight font-light tracking-tight md:text-3xl">
           {question.label}
@@ -91,11 +105,11 @@ export function MultipleChoiceStep({
         )}
       </div>
 
-      {/* Option cards */}
       <div
         role="radiogroup"
         aria-label={question.label}
         className="flex flex-col gap-2"
+        onMouseLeave={handleMouseLeave}
       >
         {question.options.map((option, index) => {
           const isSelected = value === option
@@ -109,10 +123,11 @@ export function MultipleChoiceStep({
               role="radio"
               aria-checked={isSelected}
               onClick={() => handleSelect(option)}
+              onMouseEnter={() => handleMouseEnter(index)}
               className={cn(
                 "flex w-full items-center gap-4 rounded-lg border-2 px-5 py-4 text-left",
                 "cursor-pointer transition-all duration-200 will-change-transform",
-                "hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98]",
+                "active:scale-[0.98]",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
                 isSelected
                   ? "border-primary bg-primary/10 text-foreground"
@@ -121,7 +136,6 @@ export function MultipleChoiceStep({
                     : "border-border bg-transparent text-foreground"
               )}
             >
-              {/* Letter badge */}
               <span
                 className={cn(
                   "flex size-7 shrink-0 items-center justify-center rounded-md border font-mono text-xs font-semibold",
