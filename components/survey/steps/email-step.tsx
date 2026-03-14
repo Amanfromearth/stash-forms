@@ -20,7 +20,7 @@ export function EmailStep({ question, value, onChange }: EmailStepProps) {
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl leading-tight font-medium tracking-tight md:text-3xl">
+        <h2 className="font-heading text-2xl leading-tight font-light tracking-tight md:text-3xl">
           {question.label}
           {question.required && (
             <span className="ml-1 text-primary" aria-hidden="true">
@@ -42,7 +42,7 @@ export function EmailStep({ question, value, onChange }: EmailStepProps) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={question.placeholder ?? "your@email.com"}
-          className="h-12 rounded-none border-0 border-b-2 border-border bg-transparent px-0 text-lg shadow-none transition-colors focus-visible:border-primary focus-visible:ring-0"
+          className="h-14 rounded-none border-0 border-b-2 border-border bg-transparent px-3 text-xl shadow-none transition-colors focus-visible:border-primary focus-visible:ring-0 md:h-16 md:text-2xl"
           autoComplete="email"
           inputMode="email"
         />

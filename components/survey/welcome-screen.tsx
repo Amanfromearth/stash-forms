@@ -24,13 +24,19 @@ export function WelcomeScreen({ config, onStart }: WelcomeScreenProps) {
   }, [onStart])
 
   return (
-    <div className="flex w-full max-w-2xl animate-in flex-col gap-8 duration-500 fade-in slide-in-from-bottom-4">
-      <div className="flex flex-col gap-4">
-        <h1 className="text-4xl leading-tight font-bold tracking-tight text-balance md:text-5xl">
-          {config.title}
+    <div className="flex w-full max-w-2xl flex-col gap-8">
+      <div
+        className="flex animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4"
+        style={{ animationTimingFunction: "var(--ease-out-quint)" }}
+      >
+        <h1 className="font-heading text-4xl leading-tight font-light tracking-tight text-balance md:text-5xl">
+          🌍 {config.title}
         </h1>
-        <p className="text-xl leading-relaxed text-pretty text-muted-foreground">
+        <p className="text-lg leading-relaxed text-pretty whitespace-pre-line text-muted-foreground">
           {config.description}
+        </p>
+        <p className="text-sm text-muted-foreground/70">
+          ⏱️ Estimated time: 3 minutes
         </p>
       </div>
 
@@ -38,7 +44,7 @@ export function WelcomeScreen({ config, onStart }: WelcomeScreenProps) {
         <Button
           onClick={onStart}
           size="lg"
-          className="h-auto gap-2 px-8 py-6 text-base"
+          className="h-auto gap-2 px-5 py-2.5 text-sm"
         >
           Start
           <HugeiconsIcon icon={ArrowRight01Icon} size={18} />

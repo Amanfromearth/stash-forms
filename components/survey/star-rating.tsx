@@ -96,11 +96,11 @@ function StarRating({
             disabled={disabled}
             tabIndex={isSelected || (!value && position === 1) ? 0 : -1}
             className={cn(
-              "inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition-colors duration-150 outline-none",
+              "inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition-all duration-150 will-change-transform outline-none active:scale-90",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               isFilled
-                ? "text-yellow-400"
-                : "text-muted-foreground hover:text-yellow-300"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-primary/60"
             )}
             onClick={() => onChange(position)}
             onMouseEnter={() => setHoverValue(position)}

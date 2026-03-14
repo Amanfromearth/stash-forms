@@ -1,54 +1,45 @@
 "use client"
 
-import { useEffect, useCallback, useRef } from "react"
+import { useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
-import type { MultipleChoiceQuestion } from "@/lib/form-config"
+import type { MultiSelectQuestion } from "@/lib/form-config"
 
 const LETTER_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-interface MultipleChoiceStepProps {
-  question: MultipleChoiceQuestion
-  value: string | null
-  onChange: (value: string) => void
-  onAdvance?: () => void
+interface MultiSelectStepProps {
+  question: MultiSelectQuestion
+  value: string[]
+  onChange: (value: string[]) => void
 }
 
-export function MultipleChoiceStep({
+export function MultiSelectStep({
   question,
   value,
   onChange,
-  onAdvance,
-}: MultipleChoiceStepProps) {
-  const initialValueRef = useRef(value)
-  const userSelected = useRef(false)
-
-  useEffect(() => {
-    if (userSelected.current && value !== null && onAdvance) {
-      const timer = setTimeout(onAdvance, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [value, onAdvance])
-
-  const handleSelect = useCallback(
+}: MultiSelectStepProps) {
+  const toggleOption = useCallback(
     (option: string) => {
-      userSelected.current = true
-      onChange(option)
+      if (value.includes(option)) {
+        onChange(value.filter((v) => v !== option))
+      } else {
+        onChange([...value, option])
+      }
     },
-    [onChange]
+    [value, onChange]
   )
 
-  // Keyboard: number keys 1-9 select options
+  // Keyboard: number keys 1-9 toggle options
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const num = parseInt(e.key)
       if (!isNaN(num) && num >= 1 && num <= question.options.length) {
         e.preventDefault()
-        handleSelect(question.options[num - 1])
+        toggleOption(question.options[num - 1])
       }
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [question.options, handleSelect])
+  }, [question.options, toggleOption])
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
@@ -71,21 +62,21 @@ export function MultipleChoiceStep({
 
       {/* Option cards */}
       <div
-        role="radiogroup"
+        role="group"
         aria-label={question.label}
         className="flex flex-col gap-2"
       >
         {question.options.map((option, index) => {
-          const isSelected = value === option
+          const isSelected = value.includes(option)
           const letter = LETTER_LABELS[index] ?? String(index + 1)
 
           return (
             <button
               key={option}
               type="button"
-              role="radio"
+              role="checkbox"
               aria-checked={isSelected}
-              onClick={() => handleSelect(option)}
+              onClick={() => toggleOption(option)}
               className={cn(
                 "flex w-full items-center gap-4 rounded-lg border-2 px-5 py-4 text-left",
                 "cursor-pointer transition-all duration-200 will-change-transform",
@@ -96,7 +87,7 @@ export function MultipleChoiceStep({
                   : "border-border bg-transparent text-foreground"
               )}
             >
-              {/* Letter badge */}
+              {/* Letter badge with checkbox indicator */}
               <span
                 className={cn(
                   "flex size-7 shrink-0 items-center justify-center rounded-md border font-mono text-xs font-semibold",
@@ -106,13 +97,36 @@ export function MultipleChoiceStep({
                     : "border-border bg-muted text-muted-foreground"
                 )}
               >
-                {letter}
+                {isSelected ? (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M11.5 3.5L5.5 10L2.5 7"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  letter
+                )}
               </span>
               <span className="text-base font-medium">{option}</span>
             </button>
           )
         })}
       </div>
+
+      {/* Selection count */}
+      {value.length > 0 && (
+        <p className="text-sm text-muted-foreground">{value.length} selected</p>
+      )}
     </div>
   )
 }

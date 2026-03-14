@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { StarRating } from "@/components/survey/star-rating"
 import type { RatingQuestion } from "@/lib/form-config"
 
@@ -17,8 +17,15 @@ export function RatingStep({
   onChange,
   onAdvance,
 }: RatingStepProps) {
+  const userSelected = useRef(false)
+
+  const handleChange = (v: number) => {
+    userSelected.current = true
+    onChange(v)
+  }
+
   useEffect(() => {
-    if (value !== null && onAdvance) {
+    if (userSelected.current && value !== null && onAdvance) {
       const timer = setTimeout(onAdvance, 500)
       return () => clearTimeout(timer)
     }
@@ -27,7 +34,7 @@ export function RatingStep({
   return (
     <div className="flex w-full max-w-2xl flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl leading-tight font-medium tracking-tight md:text-3xl">
+        <h2 className="font-heading text-2xl leading-tight font-light tracking-tight md:text-3xl">
           {question.label}
           {question.required && (
             <span className="ml-1 text-primary" aria-hidden="true">
@@ -45,7 +52,7 @@ export function RatingStep({
       <div className="flex flex-col items-start gap-3">
         <StarRating
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
           min={question.min}
           max={question.max}
         />

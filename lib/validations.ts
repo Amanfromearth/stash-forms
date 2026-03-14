@@ -6,6 +6,7 @@ export const submissionSchema = z.object({
       z.string(),
       z.union([
         z.string().max(10_000, "Answer too long"),
+        z.array(z.string().max(500)).max(20),
         z.number().finite().min(1).max(10),
         z.null(),
       ])

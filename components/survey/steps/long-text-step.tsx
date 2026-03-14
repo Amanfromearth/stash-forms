@@ -31,7 +31,7 @@ export function LongTextStep({ question, value, onChange }: LongTextStepProps) {
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h2 className="text-2xl leading-tight font-medium tracking-tight md:text-3xl">
+        <h2 className="font-heading text-2xl leading-tight font-light tracking-tight md:text-3xl">
           {question.label}
           {question.required && (
             <span className="ml-1 text-primary" aria-hidden="true">
@@ -55,30 +55,29 @@ export function LongTextStep({ question, value, onChange }: LongTextStepProps) {
           rows={4}
           maxLength={maxLength}
           className={cn(
-            "w-full resize-none overflow-hidden bg-transparent text-lg outline-none",
-            "border-0 border-b-2 border-border px-0 py-2",
+            "w-full resize-none overflow-hidden bg-transparent text-xl outline-none md:text-2xl",
+            "border-0 border-b-2 border-border px-3 py-3",
             "placeholder:text-muted-foreground/50",
             "transition-colors focus:border-primary",
             "min-h-[100px]"
           )}
           style={{ height: "auto" }}
         />
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <p className="text-sm text-muted-foreground/60">
-            Press{" "}
             <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
               Shift + Enter
             </kbd>{" "}
-            for new line,{" "}
+            new line ·{" "}
             <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
               Enter ↵
             </kbd>{" "}
-            to continue
+            continue
           </p>
           {maxLength && (
             <p
               className={cn(
-                "text-sm tabular-nums",
+                "ml-auto text-sm tabular-nums",
                 charCount > maxLength * 0.9
                   ? "text-destructive"
                   : "text-muted-foreground/60"

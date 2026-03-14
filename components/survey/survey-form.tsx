@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
-import type { FormConfig, Question } from "@/lib/form-config"
+import type {
+  FormConfig,
+  Question,
+  MultiSelectQuestion,
+  SectionHeaderQuestion,
+} from "@/lib/form-config"
 import { ProgressBar } from "./progress-bar"
 import { QuestionWrapper } from "./question-wrapper"
 import { WelcomeScreen } from "./welcome-screen"
@@ -12,7 +17,20 @@ import { ShortTextStep } from "./steps/short-text-step"
 import { EmailStep } from "./steps/email-step"
 import { LongTextStep } from "./steps/long-text-step"
 import { MultipleChoiceStep } from "./steps/multiple-choice-step"
+import { MultiSelectStep } from "./steps/multi-select-step"
 import { RatingStep } from "./steps/rating-step"
+import { SectionHeaderStep } from "./steps/section-header-step"
+
+function isQuestionVisible(
+  question: Question,
+  answers: Record<string, unknown>
+): boolean {
+  if (question.type === "section_header") return true
+  if (!("condition" in question) || !question.condition) return true
+  const { questionId, equals } = question.condition
+  const answer = answers[questionId]
+  return answer === equals
+}
 
 interface SurveyFormProps {
   config: FormConfig
@@ -39,10 +57,45 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     setFieldError(null)
   }, [])
 
+  const findNextVisibleStep = useCallback(
+    (fromStep: number): number => {
+      let next = fromStep + 1
+      while (next <= totalQuestions) {
+        const q = config.questions[next - 1]
+        if (isQuestionVisible(q, answers)) return next
+        next++
+      }
+      return next
+    },
+    [config.questions, totalQuestions, answers]
+  )
+
+  const findPrevVisibleStep = useCallback(
+    (fromStep: number): number => {
+      let prev = fromStep - 1
+      while (prev >= 1) {
+        const q = config.questions[prev - 1]
+        if (isQuestionVisible(q, answers)) return prev
+        prev--
+      }
+      return prev
+    },
+    [config.questions, answers]
+  )
+
   const goNext = useCallback(async () => {
-    if (currentQuestion?.required) {
+    if (
+      currentQuestion &&
+      currentQuestion.type !== "section_header" &&
+      currentQuestion.required
+    ) {
       const answer = answers[currentQuestion.id]
-      if (answer === "" || answer === null || answer === undefined) {
+      const isEmpty =
+        answer === "" ||
+        answer === null ||
+        answer === undefined ||
+        (Array.isArray(answer) && answer.length === 0)
+      if (isEmpty) {
         setFieldError("This field is required")
         return
       }
@@ -50,7 +103,9 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
 
     setFieldError(null)
 
-    if (step === totalQuestions) {
+    const nextStep = findNextVisibleStep(step)
+
+    if (nextStep > totalQuestions) {
       setIsSubmitting(true)
       setError(null)
       try {
@@ -69,17 +124,25 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
       return
     }
 
-    setStep((s) => s + 1)
+    setStep(nextStep)
     setDirection("forward")
-  }, [step, totalQuestions, currentQuestion, answers, onSubmit])
+  }, [
+    step,
+    totalQuestions,
+    currentQuestion,
+    answers,
+    onSubmit,
+    findNextVisibleStep,
+  ])
 
   const goBack = useCallback(() => {
     if (step > 0) {
-      setStep((s) => s - 1)
+      const prevStep = findPrevVisibleStep(step)
+      setStep(prevStep)
       setDirection("backward")
       setFieldError(null)
     }
-  }, [step])
+  }, [step, findPrevVisibleStep])
 
   const handleReset = useCallback(() => {
     setStep(0)
@@ -94,13 +157,16 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (step < 1 || step > totalQuestions) return
 
-      if (e.key === "Enter") {
+      const isSectionHeader =
+        config.questions[step - 1]?.type === "section_header"
+
+      if (e.key === "Enter" && !isSectionHeader) {
         if (e.target instanceof HTMLTextAreaElement) return
         e.preventDefault()
         goNext()
       }
 
-      if (e.key === "ArrowUp") {
+      if (e.key === "ArrowLeft") {
         if (
           e.target instanceof HTMLInputElement ||
           e.target instanceof HTMLTextAreaElement
@@ -113,15 +179,24 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [step, totalQuestions, goNext, goBack])
+  }, [step, totalQuestions, goNext, goBack, config.questions])
 
-  const showProgressBar = step >= 1 && step <= totalQuestions
+  const isSectionHeader = currentQuestion?.type === "section_header"
+  const showProgressBar =
+    step >= 1 && step <= totalQuestions && !isSectionHeader
   const isTextStep =
     currentQuestion?.type === "short_text" ||
     currentQuestion?.type === "email" ||
     currentQuestion?.type === "long_text"
-  const showNextButton = step >= 1 && step <= totalQuestions && isTextStep
-  const isLastQuestion = step === totalQuestions
+  const isMultiSelect = currentQuestion?.type === "multi_select"
+  const showNextButton =
+    step >= 1 &&
+    step <= totalQuestions &&
+    !isSectionHeader &&
+    (isTextStep || isMultiSelect)
+
+  const isLastVisibleStep =
+    step >= 1 && findNextVisibleStep(step) > totalQuestions
 
   function renderStep() {
     if (step === 0) {
@@ -133,6 +208,15 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     }
 
     const question = config.questions[step - 1]
+
+    if (question.type === "section_header") {
+      return (
+        <SectionHeaderStep
+          question={question as SectionHeaderQuestion}
+          onContinue={goNext}
+        />
+      )
+    }
 
     switch (question.type) {
       case "short_text":
@@ -168,6 +252,14 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
             onAdvance={goNext}
           />
         )
+      case "multi_select":
+        return (
+          <MultiSelectStep
+            question={question as MultiSelectQuestion}
+            value={(answers[question.id] as string[]) ?? []}
+            onChange={(v) => setAnswer(question.id, v)}
+          />
+        )
       case "rating":
         return (
           <RatingStep
@@ -181,7 +273,9 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-col items-center justify-center p-6 md:p-12">
+    <div
+      className={`relative flex min-h-dvh flex-col items-center justify-center p-6 md:p-12 ${step === 0 ? "landing-gradient" : ""}`}
+    >
       {showProgressBar && <ProgressBar current={step} total={totalQuestions} />}
 
       <div className="w-full max-w-2xl">
@@ -189,7 +283,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
           {renderStep()}
         </QuestionWrapper>
 
-        {fieldError && (
+        {fieldError && !isSectionHeader && (
           <p className="mt-3 text-sm text-destructive">{fieldError}</p>
         )}
 
@@ -198,11 +292,11 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
             type="button"
             onClick={goNext}
             disabled={isSubmitting}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+            className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-accent active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50"
           >
             {isSubmitting
               ? "Submitting..."
-              : isLastQuestion
+              : isLastVisibleStep
                 ? "Submit"
                 : "Next"}
             {!isSubmitting && (
@@ -215,10 +309,10 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
       </div>
 
       {step >= 1 && step <= totalQuestions && (
-        <div className="fixed bottom-6 left-6 text-xs text-muted-foreground/50">
+        <div className="mt-12 text-xs text-muted-foreground/50">
           Press{" "}
           <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
-            ↑
+            ←
           </kbd>{" "}
           to go back
         </div>

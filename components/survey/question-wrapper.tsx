@@ -16,6 +16,7 @@ export function QuestionWrapper({ children, direction }: QuestionWrapperProps) {
           ? "slide-in-from-bottom-4"
           : "slide-in-from-top-4"
       )}
+      style={{ animationTimingFunction: "var(--ease-out-quint)" }}
     >
       {children}
     </div>

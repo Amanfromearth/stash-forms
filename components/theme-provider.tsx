@@ -15,57 +15,33 @@ function ThemeProvider({
       disableTransitionOnChange
       {...props}
     >
-      <ThemeHotkey />
       {children}
+      <ThemeToggle />
     </NextThemesProvider>
   )
 }
 
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false
-  }
-
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT"
-  )
-}
-
-function ThemeHotkey() {
+function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.repeat) {
-        return
-      }
+    setMounted(true)
+  }, [])
 
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
+  if (!mounted) return null
 
-      if (event.key.toLowerCase() !== "d") {
-        return
-      }
+  const isDark = resolvedTheme === "dark"
 
-      if (isTypingTarget(event.target)) {
-        return
-      }
-
-      setTheme(resolvedTheme === "dark" ? "light" : "dark")
-    }
-
-    window.addEventListener("keydown", onKeyDown)
-
-    return () => {
-      window.removeEventListener("keydown", onKeyDown)
-    }
-  }, [resolvedTheme, setTheme])
-
-  return null
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="fixed right-4 bottom-4 z-50 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/80 text-xs text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+      aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
+    >
+      {isDark ? "☀️" : "🌙"}
+    </button>
+  )
 }
 
 export { ThemeProvider }
