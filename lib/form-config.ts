@@ -16,6 +16,11 @@ interface BaseQuestion {
     questionId: string
     equals: string
   }
+  autoFill?: {
+    questionId: string
+    ifContains: string[]
+    value: string
+  }
 }
 
 export interface ShortTextQuestion extends BaseQuestion {
@@ -78,7 +83,7 @@ export const SURVEY_CONFIG: FormConfig = {
   description:
     "We're running a short survey to learn how people in India save, invest, and think about owning global assets like US stocks or foreign currencies.\n\nIt takes under 3 minutes, and your input will help us design better tools for global investing.",
   questions: [
-    // ── Section 1 — Basic Profile ──
+    // ── Q1 — Email ──
     {
       id: "email",
       type: "email",
@@ -86,27 +91,29 @@ export const SURVEY_CONFIG: FormConfig = {
       placeholder: "you@example.com",
       required: true,
     },
+    // ── Q2 — Age Range ──
     {
       id: "age_range",
       type: "multiple_choice",
       label: "What's your age range?",
       required: true,
-      options: ["18–24", "25–34", "35–44", "45+"],
+      options: ["18–24", "25–30", "30–40", "40+"],
     },
+    // ── Q3 — Occupation ──
     {
       id: "occupation",
-      type: "short_text",
-      label: "What best describes your occupation?",
-      placeholder: "e.g. Software engineer, Student, Business owner…",
-      required: true,
-    },
-    {
-      id: "monthly_savings",
       type: "multiple_choice",
-      label: "How much do you save per month, roughly?",
+      label: "What best describes your occupation?",
       required: true,
-      options: ["Less than ₹5k", "₹5k–₹20k", "₹20k–₹50k", "₹50k+"],
+      options: [
+        "Student",
+        "Salaried employee",
+        "Freelancer / remote worker",
+        "Business owner",
+        "Others",
+      ],
     },
+    // ── Q4 — Savings Share ──
     {
       id: "savings_share",
       type: "multiple_choice",
@@ -115,6 +122,15 @@ export const SURVEY_CONFIG: FormConfig = {
       required: true,
       options: ["Less than 10%", "10–20%", "20–30%", "30%+"],
     },
+    // ── Q5 — Monthly Savings ──
+    {
+      id: "monthly_savings",
+      type: "multiple_choice",
+      label: "How much do you save per month, roughly?",
+      required: true,
+      options: ["Less than ₹5k", "₹5k–₹20k", "₹20k–₹50k", "₹50k+"],
+    },
+    // ── Q6 — Where Invest ──
     {
       id: "where_invest",
       type: "multi_select",
@@ -122,26 +138,32 @@ export const SURVEY_CONFIG: FormConfig = {
       description: "Select all that apply",
       required: true,
       options: [
-        "Bank savings account",
+        "Savings account",
         "Fixed deposits",
-        "Mutual funds / SIPs",
-        "Stocks (direct equity)",
-        "Gold / Digital gold",
-        "Real estate",
+        "Mutual funds",
+        "Indian Stocks",
+        "US Stocks",
+        "Other foreign stocks",
         "Crypto",
-        "PPF / NPS / EPF",
-        "Other",
+        "Gold",
+        "Real estate",
+        "I don't invest",
       ],
     },
-
-    // ── Section 2 — Awareness of Global Investing ──
+    // ── Q7 — Invested Foreign (auto-fill Yes if Q6 has US/foreign stocks) ──
     {
       id: "invested_foreign",
       type: "multiple_choice",
       label: "Have you ever invested in foreign stocks or assets?",
       required: true,
       options: ["Yes", "No"],
+      autoFill: {
+        questionId: "where_invest",
+        ifContains: ["US Stocks", "Other foreign stocks"],
+        value: "Yes",
+      },
     },
+    // ── If Yes follow-ups ──
     {
       id: "foreign_platform",
       type: "short_text",
@@ -173,6 +195,7 @@ export const SURVEY_CONFIG: FormConfig = {
       required: false,
       condition: { questionId: "invested_foreign", equals: "Yes" },
     },
+    // ── If No follow-up ──
     {
       id: "foreign_considered",
       type: "long_text",
@@ -181,14 +204,16 @@ export const SURVEY_CONFIG: FormConfig = {
       required: false,
       condition: { questionId: "invested_foreign", equals: "No" },
     },
+    // ── Q8 ──
     {
       id: "thought_global",
       type: "multiple_choice",
       label:
-        "Have you ever thought about investing in global companies — like Apple, Nvidia, or Netflix?",
+        "Have you ever thought about investing in global companies like Apple, Nvidia, or Netflix?",
       required: true,
       options: ["Yes", "No"],
     },
+    // ── Q9 ──
     {
       id: "held_back",
       type: "multi_select",
@@ -205,9 +230,7 @@ export const SURVEY_CONFIG: FormConfig = {
         "Never really thought about it",
       ],
     },
-
-    // ── Section 3 — Currency Awareness ──
-    // ── Section 3 — Currency Awareness ──
+    // ── Q10 ──
     {
       id: "rupee_losing_value",
       type: "multiple_choice",
@@ -216,13 +239,15 @@ export const SURVEY_CONFIG: FormConfig = {
       required: true,
       options: ["Yes", "No", "Not sure"],
     },
+    // ── Q11 ──
     {
       id: "concern_level",
       type: "multiple_choice",
-      label: "Does that concern you personally?",
+      label: "Does this concern you?",
       required: true,
       options: ["Yes, quite a bit", "Somewhat", "Not really"],
     },
+    // ── Q12 ──
     {
       id: "changed_saving",
       type: "multiple_choice",
@@ -244,6 +269,7 @@ export const SURVEY_CONFIG: FormConfig = {
         equals: "Yes — please explain",
       },
     },
+    // ── Q13 ──
     {
       id: "save_in_usd",
       type: "multiple_choice",
@@ -252,14 +278,14 @@ export const SURVEY_CONFIG: FormConfig = {
       required: true,
       options: ["Yes", "Maybe", "No"],
     },
+    // ── Q14 ──
     {
       id: "usd_reasoning",
       type: "long_text",
       label: "What's your reasoning?",
       required: false,
     },
-
-    // ── Section 4 — Micro-Investing Behaviour ──
+    // ── Q15 ──
     {
       id: "recurring_investments",
       type: "multi_select",
@@ -272,6 +298,7 @@ export const SURVEY_CONFIG: FormConfig = {
         "No, I don't",
       ],
     },
+    // ── Q16 ──
     {
       id: "auto_invest_app",
       type: "multiple_choice",
@@ -280,6 +307,7 @@ export const SURVEY_CONFIG: FormConfig = {
       required: true,
       options: ["Definitely", "Maybe", "No"],
     },
+    // ── Q17 ──
     {
       id: "interest_area",
       type: "multi_select",
@@ -294,8 +322,7 @@ export const SURVEY_CONFIG: FormConfig = {
         "None of these",
       ],
     },
-
-    // ── Section 5 — Trust & Pricing ──
+    // ── Q18 ──
     {
       id: "trust_factors",
       type: "multi_select",
@@ -312,13 +339,7 @@ export const SURVEY_CONFIG: FormConfig = {
         "Clear, transparent fees",
       ],
     },
-    {
-      id: "min_starting_amount",
-      type: "multiple_choice",
-      label: "What's the smallest amount you'd feel comfortable starting with?",
-      required: true,
-      options: ["₹10", "₹50", "₹100", "₹500+"],
-    },
+    // ── Q19 ──
     {
       id: "foreign_allocation",
       type: "multiple_choice",
@@ -327,8 +348,24 @@ export const SURVEY_CONFIG: FormConfig = {
       required: true,
       options: ["Less than 5%", "Around 10%", "Around 20%", "30% or more"],
     },
-
-    // ── Section 6 — Habit Formation ──
+    // ── Q20 ──
+    {
+      id: "min_starting_amount",
+      type: "multiple_choice",
+      label: "What's the smallest amount you'd feel comfortable starting with?",
+      required: true,
+      options: [
+        "₹10",
+        "₹50",
+        "₹100",
+        "₹500+",
+        "₹1000+",
+        "₹2000+",
+        "₹5000+",
+        "₹10,000+",
+      ],
+    },
+    // ── Q21 ──
     {
       id: "engaging_feature",
       type: "multiple_choice",
@@ -344,6 +381,7 @@ export const SURVEY_CONFIG: FormConfig = {
         "Not sure",
       ],
     },
+    // ── Q22 ──
     {
       id: "usage_frequency",
       type: "multiple_choice",
@@ -352,20 +390,13 @@ export const SURVEY_CONFIG: FormConfig = {
       required: true,
       options: ["Daily", "Weekly", "Monthly", "Honestly, probably wouldn't"],
     },
-
-    // ── Final ──
+    // ── Q23 — Final ──
     {
       id: "what_would_it_take",
       type: "long_text",
-      label: "What would it take for you to put ₹500 into it right now?",
+      label:
+        "Imagine this product exists today. What would it take for you to put ₹500 into it right now?",
       required: true,
-    },
-    {
-      id: "follow_up",
-      type: "multiple_choice",
-      label: "Would you be open to a follow-up conversation?",
-      required: true,
-      options: ["Yes", "Maybe", "No"],
     },
   ],
 }

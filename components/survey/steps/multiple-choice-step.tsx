@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useCallback, useRef } from "react"
+import { useEffect, useCallback, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { MultipleChoiceQuestion } from "@/lib/form-config"
 
@@ -37,18 +37,40 @@ export function MultipleChoiceStep({
     [onChange]
   )
 
-  // Keyboard: number keys 1-9 select options
+  const [focusedIndex, setFocusedIndex] = useState(0)
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const num = parseInt(e.key)
       if (!isNaN(num) && num >= 1 && num <= question.options.length) {
         e.preventDefault()
+        e.stopImmediatePropagation()
         handleSelect(question.options[num - 1])
+        return
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        setFocusedIndex((prev) =>
+          prev < question.options.length - 1 ? prev + 1 : 0
+        )
+        return
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault()
+        setFocusedIndex((prev) =>
+          prev > 0 ? prev - 1 : question.options.length - 1
+        )
+        return
+      }
+      if (e.key === "Enter") {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        handleSelect(question.options[focusedIndex])
       }
     }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [question.options, handleSelect])
+    window.addEventListener("keydown", handleKeyDown, true)
+    return () => window.removeEventListener("keydown", handleKeyDown, true)
+  }, [question.options, handleSelect, focusedIndex])
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-6">
@@ -77,6 +99,7 @@ export function MultipleChoiceStep({
       >
         {question.options.map((option, index) => {
           const isSelected = value === option
+          const isFocused = focusedIndex === index
           const letter = LETTER_LABELS[index] ?? String(index + 1)
 
           return (
@@ -93,7 +116,9 @@ export function MultipleChoiceStep({
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
                 isSelected
                   ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border bg-transparent text-foreground"
+                  : isFocused
+                    ? "border-primary/50 bg-primary/5 text-foreground"
+                    : "border-border bg-transparent text-foreground"
               )}
             >
               {/* Letter badge */}

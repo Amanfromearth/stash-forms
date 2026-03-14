@@ -83,6 +83,29 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     [config.questions, answers]
   )
 
+  const applyAutoFill = useCallback(
+    (targetStep: number) => {
+      if (targetStep < 1 || targetStep > totalQuestions) return
+      const q = config.questions[targetStep - 1]
+      if (
+        !q ||
+        q.type === "section_header" ||
+        !("autoFill" in q) ||
+        !q.autoFill
+      )
+        return
+      const { questionId, ifContains, value } = q.autoFill
+      const sourceAnswer = answers[questionId]
+      if (Array.isArray(sourceAnswer)) {
+        const hasMatch = ifContains.some((v) => sourceAnswer.includes(v))
+        if (hasMatch && answers[q.id] === undefined) {
+          setAnswers((prev) => ({ ...prev, [q.id]: value }))
+        }
+      }
+    },
+    [config.questions, totalQuestions, answers]
+  )
+
   const goNext = useCallback(async () => {
     if (
       currentQuestion &&
@@ -124,6 +147,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
       return
     }
 
+    applyAutoFill(nextStep)
     setStep(nextStep)
     setDirection("forward")
   }, [
@@ -133,6 +157,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     answers,
     onSubmit,
     findNextVisibleStep,
+    applyAutoFill,
   ])
 
   const goBack = useCallback(() => {
@@ -161,7 +186,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
         config.questions[step - 1]?.type === "section_header"
 
       if (e.key === "Enter" && !isSectionHeader) {
-        if (e.target instanceof HTMLTextAreaElement) return
+        if (e.target instanceof HTMLTextAreaElement && e.shiftKey) return
         e.preventDefault()
         goNext()
       }
