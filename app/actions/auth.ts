@@ -7,7 +7,8 @@ import { createHmac } from "crypto"
 const SESSION_COOKIE = "admin_session"
 
 function generateSessionToken(): string {
-  const secret = process.env.SESSION_SECRET ?? "fallback-secret"
+  const secret = process.env.SESSION_SECRET
+  if (!secret) throw new Error("SESSION_SECRET env var is required")
   const timestamp = Date.now().toString()
   const hmac = createHmac("sha256", secret).update(timestamp).digest("hex")
   return `${timestamp}.${hmac}`

@@ -37,13 +37,14 @@ async function validateSession(token: string): Promise<boolean> {
   const tokenAge = Date.now() - parseInt(timestamp)
   if (tokenAge > 24 * 60 * 60 * 1000) return false
 
-  // Verify HMAC
-  const { createHmac } = await import("crypto")
+  // Verify HMAC (constant-time comparison)
+  const { createHmac, timingSafeEqual } = await import("crypto")
   const expectedHmac = createHmac("sha256", secret)
     .update(timestamp)
     .digest("hex")
 
-  return hmac === expectedHmac
+  if (hmac.length !== expectedHmac.length) return false
+  return timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac))
 }
 
 export const config = {
