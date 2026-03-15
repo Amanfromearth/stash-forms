@@ -16,6 +16,20 @@ export const metadata: Metadata = {
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>",
   },
+  openGraph: {
+    title: "🌍 How Does India Think About Global Investing?",
+    description:
+      "Take a 3-minute survey to help us understand how Indians save, invest, and think about owning global assets like US stocks and foreign currencies.",
+    type: "website",
+    locale: "en_IN",
+    siteName: "Global Investing Survey",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "🌍 How Does India Think About Global Investing?",
+    description:
+      "Take a 3-minute survey to help us understand how Indians save, invest, and think about owning global assets.",
+  },
 }
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" })
