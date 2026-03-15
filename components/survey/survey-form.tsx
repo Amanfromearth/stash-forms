@@ -364,15 +364,17 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
         {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
       </div>
 
-      {step >= 1 && step <= totalQuestions && (
-        <div className="mt-12 text-xs text-muted-foreground/50">
-          Press{" "}
+      {step >= 1 && step <= totalQuestions ? (
+        <button
+          onClick={goBack}
+          className="mt-12 cursor-pointer text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+        >
           <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
             ←
           </kbd>{" "}
-          to go back
-        </div>
-      )}
+          go back
+        </button>
+      ) : null}
     </div>
   )
 }
