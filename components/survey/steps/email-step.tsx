@@ -46,7 +46,7 @@ export function EmailStep({ question, value, onChange }: EmailStepProps) {
           autoComplete="email"
           inputMode="email"
         />
-        <p className="text-sm text-muted-foreground/60">
+        <p className="hidden text-sm text-muted-foreground/60 md:block">
           Press{" "}
           <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
             Enter ↵

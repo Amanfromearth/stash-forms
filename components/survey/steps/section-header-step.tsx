@@ -51,7 +51,7 @@ export function SectionHeaderStep({
           Continue
           <HugeiconsIcon icon={ArrowRight01Icon} size={16} />
         </Button>
-        <p className="text-sm text-muted-foreground/60">
+        <p className="hidden text-sm text-muted-foreground/60 md:block">
           Press{" "}
           <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
             Enter ↵

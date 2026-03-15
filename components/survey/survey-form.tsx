@@ -215,7 +215,11 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
         config.questions[step - 1]?.type === "section_header"
 
       if (e.key === "Enter" && !isSectionHeader) {
-        if (e.target instanceof HTMLTextAreaElement && e.shiftKey) return
+        if (e.target instanceof HTMLTextAreaElement) {
+          const isTouchDevice =
+            "ontouchstart" in window || navigator.maxTouchPoints > 0
+          if (isTouchDevice || e.shiftKey) return
+        }
         e.preventDefault()
         goNext()
       }
@@ -243,11 +247,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     currentQuestion?.type === "email" ||
     currentQuestion?.type === "long_text"
   const isMultiSelect = currentQuestion?.type === "multi_select"
-  const showNextButton =
-    step >= 1 &&
-    step <= totalQuestions &&
-    !isSectionHeader &&
-    (isTextStep || isMultiSelect)
+  const showNextButton = step >= 1 && step <= totalQuestions && !isSectionHeader
 
   const isLastVisibleStep =
     step >= 1 && findNextVisibleStep(step).step > totalQuestions
@@ -258,7 +258,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     }
 
     if (step === totalQuestions + 1) {
-      return <ThankYouScreen config={config} onReset={handleReset} />
+      return <ThankYouScreen onReset={handleReset} />
     }
 
     const question = config.questions[step - 1]
@@ -367,12 +367,15 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
       {step >= 1 && step <= totalQuestions ? (
         <button
           onClick={goBack}
-          className="mt-12 cursor-pointer text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+          className="mt-12 cursor-pointer rounded-md px-3 py-2 text-sm text-muted-foreground/50 transition-colors hover:text-muted-foreground active:bg-muted"
         >
-          <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
-            ←
-          </kbd>{" "}
-          go back
+          <span className="hidden md:inline">
+            <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
+              ←
+            </kbd>{" "}
+          </span>
+          <span className="md:hidden">← </span>
+          Back
         </button>
       ) : null}
     </div>

@@ -49,7 +49,7 @@ export function ShortTextStep({
           className="h-14 rounded-none border-0 border-b-2 border-border bg-transparent px-3 text-xl shadow-none transition-colors focus-visible:border-primary focus-visible:ring-0 md:h-16 md:text-2xl"
           autoComplete="off"
         />
-        <p className="text-sm text-muted-foreground/60">
+        <p className="hidden text-sm text-muted-foreground/60 md:block">
           Press{" "}
           <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">
             Enter ↵

@@ -1,15 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import type { FormConfig } from "@/lib/form-config"
 
 interface ThankYouScreenProps {
-  config: FormConfig
   onReset?: () => void
 }
 
 export function ThankYouScreen({
-  config: _config,
   onReset,
 }: ThankYouScreenProps) {
   const [showDialog, setShowDialog] = useState(false)
@@ -39,7 +36,7 @@ export function ThankYouScreen({
             className="animate-in font-heading text-4xl leading-tight font-light tracking-tight text-balance delay-150 duration-500 fill-mode-both fade-in slide-in-from-bottom-4 md:text-5xl"
             style={{ animationTimingFunction: "var(--ease-out-quint)" }}
           >
-            You're awesome! 🎉
+            You&apos;re awesome! 🎉
           </h1>
           <p
             className="animate-in text-lg text-pretty text-muted-foreground delay-300 duration-500 fill-mode-both fade-in slide-in-from-bottom-4"
@@ -77,7 +74,7 @@ export function ThankYouScreen({
           <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-xl border border-border bg-background p-6 text-center shadow-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExcGJyYzl2ejVmZ3BoNWo0NzFkZTh2MnN0anA5MDZqdW94Y2xra2c4biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/C8ih1zB9e9KJLySClx/giphy.gif"
+              src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3N2Y0OXFoOHh3dXZrNXJnOWVpbmJqeWx4NTNlZWdvaDh2cm5sbXF4YyZlcD12MV9naWZzX3RyZW5kaW5nJmN0PWc/MDJ9IbxxvDUQM/giphy.gif"
               alt="Thanks for sharing"
               className="h-40 w-auto rounded-lg object-cover"
             />
