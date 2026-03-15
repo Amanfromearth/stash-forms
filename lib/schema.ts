@@ -4,6 +4,7 @@ import {
   jsonb,
   timestamp,
   varchar,
+  text,
   index,
 } from "drizzle-orm/pg-core"
 
@@ -26,3 +27,11 @@ export const submissions = pgTable(
 
 export type Submission = typeof submissions.$inferSelect
 export type NewSubmission = typeof submissions.$inferInsert
+
+export const formConfig = pgTable("form_config", {
+  id: text("id").primaryKey().default("default"),
+  config: jsonb("config").$type<import("./form-config").FormConfig>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+})

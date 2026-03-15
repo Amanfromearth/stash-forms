@@ -81,10 +81,47 @@ const HatchedPattern = ({ config }: { config: ChartConfig }) => (
   </>
 )
 
-const GradientBar = (
+const VerticalGradientBar = (
   props: React.SVGProps<SVGRectElement> & { dataKey?: string }
 ) => {
   const { fill, x, y, width, height, dataKey } = props
+  const nx = Number(x ?? 0)
+  const nw = Number(width ?? 0)
+  const inset = nw * 0.2
+  return (
+    <>
+      <rect
+        x={nx + inset}
+        y={y}
+        width={nw - inset * 2}
+        height={height}
+        stroke="none"
+        fill={`url(#grad-vbar-${dataKey})`}
+      />
+      <rect
+        x={nx + inset}
+        y={y}
+        width={nw - inset * 2}
+        height={2}
+        stroke="none"
+        fill={fill}
+      />
+      <defs>
+        <linearGradient id={`grad-vbar-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={fill} stopOpacity={0.5} />
+          <stop offset="100%" stopColor={fill} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+    </>
+  )
+}
+
+const HorizontalGradientBar = (
+  props: React.SVGProps<SVGRectElement> & { dataKey?: string }
+) => {
+  const { fill, x, y, width, height, dataKey } = props
+  const nw = Number(width ?? 0)
+  const nx = Number(x ?? 0)
   return (
     <>
       <rect
@@ -93,11 +130,18 @@ const GradientBar = (
         width={width}
         height={height}
         stroke="none"
-        fill={`url(#grad-bar-${dataKey})`}
+        fill={`url(#grad-hbar-${dataKey})`}
       />
-      <rect x={x} y={y} width={width} height={2} stroke="none" fill={fill} />
+      <rect
+        x={nx + nw - 2}
+        y={y}
+        width={2}
+        height={height}
+        stroke="none"
+        fill={fill}
+      />
       <defs>
-        <linearGradient id={`grad-bar-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`grad-hbar-${dataKey}`} x1="1" y1="0" x2="0" y2="0">
           <stop offset="0%" stopColor={fill} stopOpacity={0.5} />
           <stop offset="100%" stopColor={fill} stopOpacity={0} />
         </linearGradient>
@@ -236,7 +280,7 @@ export function AnalyticsCharts({
                   content={<ChartTooltipContent hideLabel />}
                 />
                 <Bar
-                  shape={<GradientBar />}
+                  shape={<VerticalGradientBar />}
                   dataKey="value"
                   fill="var(--color-value)"
                 />
@@ -283,7 +327,7 @@ export function AnalyticsCharts({
                   content={<ChartTooltipContent />}
                 />
                 <Bar
-                  shape={<GradientBar />}
+                  shape={<HorizontalGradientBar />}
                   dataKey="value"
                   fill="var(--color-value)"
                 />

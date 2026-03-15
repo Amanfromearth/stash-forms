@@ -21,6 +21,11 @@ interface BaseQuestion {
     ifContains: string[]
     value: string
   }
+  skipIf?: {
+    questionId: string
+    containsAny: string[]
+    autoValue: string
+  }
 }
 
 export interface ShortTextQuestion extends BaseQuestion {
@@ -150,17 +155,17 @@ export const SURVEY_CONFIG: FormConfig = {
         "I don't invest",
       ],
     },
-    // ── Q7 — Invested Foreign (auto-fill Yes if Q6 has US/foreign stocks) ──
+    // ── Q7 — Invested Foreign (skip + auto-set "Yes" if Q6 has US/foreign stocks) ──
     {
       id: "invested_foreign",
       type: "multiple_choice",
       label: "Have you ever invested in foreign stocks or assets?",
       required: true,
       options: ["Yes", "No"],
-      autoFill: {
+      skipIf: {
         questionId: "where_invest",
-        ifContains: ["US Stocks", "Other foreign stocks"],
-        value: "Yes",
+        containsAny: ["US Stocks", "Other foreign stocks"],
+        autoValue: "Yes",
       },
     },
     // ── If Yes follow-ups ──
@@ -212,6 +217,7 @@ export const SURVEY_CONFIG: FormConfig = {
         "Have you ever thought about investing in global companies like Apple, Nvidia, or Netflix?",
       required: true,
       options: ["Yes", "No"],
+      condition: { questionId: "invested_foreign", equals: "No" },
     },
     // ── Q9 ──
     {
@@ -220,6 +226,7 @@ export const SURVEY_CONFIG: FormConfig = {
       label: "If you haven't invested internationally, what's held you back?",
       description: "Select all that apply",
       required: false,
+      condition: { questionId: "invested_foreign", equals: "No" },
       options: [
         "Too complicated",
         "Minimum investment too high",

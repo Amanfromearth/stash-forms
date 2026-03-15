@@ -1,11 +1,19 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
+import dynamic from "next/dynamic"
 import { db } from "@/lib/db"
 import { submissions } from "@/lib/schema"
 import { SURVEY_CONFIG } from "@/lib/form-config"
-import { desc } from "drizzle-orm"
+import { desc, count, sql, and, gte, lte } from "drizzle-orm"
 import { SubmissionDetail } from "./submission-detail"
+import { AdminFilters } from "./admin-filters"
 import { getAnalytics } from "@/lib/analytics"
-import { AnalyticsCharts } from "./analytics-charts"
+
+const AnalyticsCharts = dynamic(
+  () =>
+    import("./analytics-charts").then((m) => ({ default: m.AnalyticsCharts })),
+  { loading: () => <div className="h-[600px]" /> }
+)
 
 export const metadata: Metadata = {
   title: "Survey Admin",
@@ -16,30 +24,127 @@ const PAGE_SIZE = 25
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{
+    page?: string
+    q?: string
+    age?: string
+    occupation?: string
+    invested?: string
+    from?: string
+    to?: string
+  }>
+}) {
+  return (
+    <div className="space-y-6">
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="h-24 rounded-xl border border-border" />
+            <div className="h-24 rounded-xl border border-border" />
+            <div className="h-24 rounded-xl border border-border" />
+          </div>
+        }
+      >
+        <AdminContent searchParams={searchParams} />
+      </Suspense>
+    </div>
+  )
+}
+
+async function AdminContent({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    page?: string
+    q?: string
+    age?: string
+    occupation?: string
+    invested?: string
+    from?: string
+    to?: string
+  }>
 }) {
   const params = await searchParams
   const page = Math.max(0, parseInt(params.page ?? "0"))
 
-  const [analytics, rows] = await Promise.all([
+  const conditions = []
+
+  if (params.q) {
+    conditions.push(
+      sql`${submissions.answers}->>'email' ILIKE ${"%" + params.q + "%"}`
+    )
+  }
+
+  if (params.age) {
+    conditions.push(sql`${submissions.answers}->>'age_range' = ${params.age}`)
+  }
+
+  if (params.occupation) {
+    conditions.push(
+      sql`${submissions.answers}->>'occupation' = ${params.occupation}`
+    )
+  }
+
+  if (params.invested) {
+    conditions.push(
+      sql`${submissions.answers}->>'invested_foreign' = ${params.invested}`
+    )
+  }
+
+  if (params.from) {
+    conditions.push(gte(submissions.submittedAt, new Date(params.from)))
+  }
+
+  if (params.to) {
+    const toDate = new Date(params.to)
+    toDate.setDate(toDate.getDate() + 1)
+    conditions.push(lte(submissions.submittedAt, toDate))
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+  const [analytics, [{ filteredTotal }], rows] = await Promise.all([
     getAnalytics(),
+    db.select({ filteredTotal: count() }).from(submissions).where(whereClause),
     db
       .select()
       .from(submissions)
+      .where(whereClause)
       .orderBy(desc(submissions.submittedAt))
       .limit(PAGE_SIZE)
       .offset(page * PAGE_SIZE),
   ])
 
-  const totalPages = Math.ceil(analytics.total / PAGE_SIZE)
+  const totalPages = Math.ceil(filteredTotal / PAGE_SIZE)
+
+  const paginationParams = new URLSearchParams()
+  if (params.q) paginationParams.set("q", params.q)
+  if (params.age) paginationParams.set("age", params.age)
+  if (params.occupation) paginationParams.set("occupation", params.occupation)
+  if (params.invested) paginationParams.set("invested", params.invested)
+  if (params.from) paginationParams.set("from", params.from)
+  if (params.to) paginationParams.set("to", params.to)
+
+  const buildPageUrl = (p: number) => {
+    const u = new URLSearchParams(paginationParams)
+    if (p > 0) u.set("page", String(p))
+    const qs = u.toString()
+    return qs ? `?${qs}` : "/admin"
+  }
 
   return (
-    <div className="space-y-6">
+    <>
       <AnalyticsCharts {...analytics} />
+
+      <Suspense fallback={<div className="h-20" />}>
+        <AdminFilters />
+      </Suspense>
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {analytics.total} total submission{analytics.total !== 1 ? "s" : ""}
+          {filteredTotal === analytics.total
+            ? `${analytics.total} total submission${analytics.total !== 1 ? "s" : ""}`
+            : `${filteredTotal} of ${analytics.total} submissions`}
         </p>
       </div>
 
@@ -93,24 +198,24 @@ export default async function AdminPage({
                 </tr>
               )
             })}
-            {rows.length === 0 && (
+            {rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
-                  No submissions yet
+                  {whereClause ? "No submissions found" : "No submissions yet"}
                 </td>
               </tr>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>
 
-      {totalPages > 1 && (
+      {totalPages > 1 ? (
         <div className="flex items-center justify-between">
           <a
-            href={page > 0 ? `?page=${page - 1}` : "#"}
+            href={page > 0 ? buildPageUrl(page - 1) : "#"}
             className={page === 0 ? "pointer-events-none opacity-50" : ""}
           >
             <button
@@ -124,7 +229,7 @@ export default async function AdminPage({
             Page {page + 1} of {totalPages}
           </p>
           <a
-            href={page < totalPages - 1 ? `?page=${page + 1}` : "#"}
+            href={page < totalPages - 1 ? buildPageUrl(page + 1) : "#"}
             className={
               page >= totalPages - 1 ? "pointer-events-none opacity-50" : ""
             }
@@ -137,7 +242,7 @@ export default async function AdminPage({
             </button>
           </a>
         </div>
-      )}
-    </div>
+      ) : null}
+    </>
   )
 }

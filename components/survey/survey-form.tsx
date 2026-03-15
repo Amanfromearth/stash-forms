@@ -21,11 +21,22 @@ import { MultiSelectStep } from "./steps/multi-select-step"
 import { RatingStep } from "./steps/rating-step"
 import { SectionHeaderStep } from "./steps/section-header-step"
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 function isQuestionVisible(
   question: Question,
   answers: Record<string, unknown>
 ): boolean {
   if (question.type === "section_header") return true
+  if ("skipIf" in question && question.skipIf) {
+    const source = answers[question.skipIf.questionId]
+    if (Array.isArray(source)) {
+      const shouldSkip = question.skipIf.containsAny.some((v) =>
+        source.includes(v)
+      )
+      if (shouldSkip) return false
+    }
+  }
   if (!("condition" in question) || !question.condition) return true
   const { questionId, equals } = question.condition
   const answer = answers[questionId]
@@ -58,14 +69,21 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
   }, [])
 
   const findNextVisibleStep = useCallback(
-    (fromStep: number): number => {
+    (
+      fromStep: number
+    ): { step: number; autoValues: Record<string, string> } => {
+      const autoValues: Record<string, string> = {}
       let next = fromStep + 1
       while (next <= totalQuestions) {
         const q = config.questions[next - 1]
-        if (isQuestionVisible(q, answers)) return next
+        const merged = { ...answers, ...autoValues }
+        if (isQuestionVisible(q, merged)) break
+        if ("skipIf" in q && q.skipIf) {
+          autoValues[q.id] = q.skipIf.autoValue
+        }
         next++
       }
-      return next
+      return { step: next, autoValues }
     },
     [config.questions, totalQuestions, answers]
   )
@@ -124,8 +142,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
       }
 
       if (currentQuestion.type === "email" && typeof answer === "string") {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(answer)) {
+        if (!EMAIL_REGEX.test(answer)) {
           setFieldError("Please enter a valid email address")
           return
         }
@@ -134,13 +151,17 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
 
     setFieldError(null)
 
-    const nextStep = findNextVisibleStep(step)
+    const { step: nextStep, autoValues } = findNextVisibleStep(step)
+
+    if (Object.keys(autoValues).length > 0) {
+      setAnswers((prev) => ({ ...prev, ...autoValues }))
+    }
 
     if (nextStep > totalQuestions) {
       setIsSubmitting(true)
       setError(null)
       try {
-        const result = await onSubmit(answers)
+        const result = await onSubmit({ ...answers, ...autoValues })
         if (result.success) {
           setStep(totalQuestions + 1)
           setDirection("forward")
@@ -229,7 +250,7 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     (isTextStep || isMultiSelect)
 
   const isLastVisibleStep =
-    step >= 1 && findNextVisibleStep(step) > totalQuestions
+    step >= 1 && findNextVisibleStep(step).step > totalQuestions
 
   function renderStep() {
     if (step === 0) {
@@ -309,7 +330,9 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
     <div
       className={`relative flex min-h-dvh flex-col items-center justify-center p-6 md:p-12 ${step === 0 ? "landing-gradient" : ""}`}
     >
-      {showProgressBar && <ProgressBar current={step} total={totalQuestions} />}
+      {showProgressBar ? (
+        <ProgressBar current={step} total={totalQuestions} />
+      ) : null}
 
       <div className="w-full max-w-2xl">
         <QuestionWrapper key={step} direction={direction}>

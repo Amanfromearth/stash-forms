@@ -1,16 +1,14 @@
-"use client"
-
 import { SurveyForm } from "@/components/survey/survey-form"
-import { SURVEY_CONFIG } from "@/lib/form-config"
+import { getFormConfig } from "@/lib/config-loader"
 import { submitSurvey } from "@/app/actions/submit"
 
-export default function Page() {
-  return (
-    <SurveyForm
-      config={SURVEY_CONFIG}
-      onSubmit={async (answers) => {
-        return await submitSurvey({ answers })
-      }}
-    />
-  )
+export default async function Page() {
+  const config = await getFormConfig()
+
+  async function handleSubmit(answers: Record<string, unknown>) {
+    "use server"
+    return submitSurvey({ answers })
+  }
+
+  return <SurveyForm config={config} onSubmit={handleSubmit} />
 }

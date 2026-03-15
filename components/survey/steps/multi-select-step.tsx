@@ -79,7 +79,7 @@ export function MultiSelectStep({
               onClick={() => toggleOption(option)}
               className={cn(
                 "flex w-full items-center gap-4 rounded-lg border-2 px-5 py-4 text-left",
-                "cursor-pointer transition-all duration-200 will-change-transform",
+                "cursor-pointer transition-all duration-200",
                 "hover:border-primary/50 hover:bg-primary/5 active:scale-[0.98]",
                 "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
                 isSelected
