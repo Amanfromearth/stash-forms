@@ -2,8 +2,10 @@ import type { Metadata } from "next"
 import { db } from "@/lib/db"
 import { submissions } from "@/lib/schema"
 import { SURVEY_CONFIG } from "@/lib/form-config"
-import { desc, count } from "drizzle-orm"
+import { desc } from "drizzle-orm"
 import { SubmissionDetail } from "./submission-detail"
+import { getAnalytics } from "@/lib/analytics"
+import { AnalyticsCharts } from "./analytics-charts"
 
 export const metadata: Metadata = {
   title: "Survey Admin",
@@ -19,34 +21,25 @@ export default async function AdminPage({
   const params = await searchParams
   const page = Math.max(0, parseInt(params.page ?? "0"))
 
-  const [rows, [{ total }]] = await Promise.all([
+  const [analytics, rows] = await Promise.all([
+    getAnalytics(),
     db
       .select()
       .from(submissions)
       .orderBy(desc(submissions.submittedAt))
       .limit(PAGE_SIZE)
       .offset(page * PAGE_SIZE),
-    db.select({ total: count() }).from(submissions),
   ])
 
-  const totalPages = Math.ceil(total / PAGE_SIZE)
-
-  if (rows.length === 0 && page === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <p className="text-2xl font-semibold">No submissions yet</p>
-        <p className="mt-2 text-muted-foreground">
-          Responses will appear here once people fill out the survey.
-        </p>
-      </div>
-    )
-  }
+  const totalPages = Math.ceil(analytics.total / PAGE_SIZE)
 
   return (
     <div className="space-y-6">
+      <AnalyticsCharts {...analytics} />
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {total} total submission{total !== 1 ? "s" : ""}
+          {analytics.total} total submission{analytics.total !== 1 ? "s" : ""}
         </p>
       </div>
 
@@ -58,13 +51,13 @@ export default async function AdminPage({
                 Submitted
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                 Email
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Rating
+                Age
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                Occupation
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                 Details
@@ -82,12 +75,14 @@ export default async function AdminPage({
                   <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
                     {new Date(submission.submittedAt).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3">{String(answers.name ?? "—")}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {String(answers.email ?? "—")}
                   </td>
                   <td className="px-4 py-3">
-                    {answers.rating ? `${answers.rating} / 5` : "—"}
+                    {String(answers.age_range ?? "—")}
+                  </td>
+                  <td className="px-4 py-3">
+                    {String(answers.occupation ?? "—")}
                   </td>
                   <td className="px-4 py-3">
                     <SubmissionDetail
@@ -98,6 +93,16 @@ export default async function AdminPage({
                 </tr>
               )
             })}
+            {rows.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-4 py-8 text-center text-muted-foreground"
+                >
+                  No submissions yet
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
