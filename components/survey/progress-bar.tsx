@@ -8,8 +8,11 @@ export function ProgressBar({ current, total }: ProgressBarProps) {
   return (
     <div className="fixed top-0 right-0 left-0 z-50 h-1 bg-muted">
       <div
-        className="h-full bg-primary transition-all duration-500 ease-out"
-        style={{ width: `${percentage}%` }}
+        className="h-full bg-primary transition-[width] duration-500"
+        style={{
+          width: `${percentage}%`,
+          transitionTimingFunction: "var(--ease-out-quint)",
+        }}
         role="progressbar"
         aria-valuenow={percentage}
         aria-valuemin={0}

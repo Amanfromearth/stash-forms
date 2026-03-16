@@ -375,9 +375,10 @@ export const SURVEY_CONFIG: FormConfig = {
     // ── Q21 ──
     {
       id: "engaging_feature",
-      type: "multiple_choice",
+      type: "multi_select",
       label:
         "Which feature would most likely keep you coming back to this product?",
+      description: "Select all that apply",
       required: true,
       options: [
         "Automatic daily saving",

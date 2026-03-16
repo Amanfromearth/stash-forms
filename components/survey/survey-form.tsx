@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import type {
@@ -50,9 +50,15 @@ interface SurveyFormProps {
   onSubmit: (
     answers: Record<string, unknown>
   ) => Promise<{ success: boolean; error?: string }>
+  onReset?: () => void
 }
 
-export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
+export function SurveyForm({
+  config,
+  sessionId,
+  onSubmit,
+  onReset,
+}: SurveyFormProps) {
   const totalQuestions = config.questions.length
 
   const [step, setStep] = useState(0)
@@ -61,6 +67,9 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldError, setFieldError] = useState<string | null>(null)
+  const [isExiting, setIsExiting] = useState(false)
+  const isAnimatingRef = useRef(false)
+  const isSubmittingRef = useRef(false)
 
   const filledCount = Object.values(answers).filter(
     (v) =>
@@ -142,7 +151,17 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
     [config.questions, totalQuestions, answers]
   )
 
+  const animateExit = useCallback((): Promise<void> => {
+    isAnimatingRef.current = true
+    setIsExiting(true)
+    return new Promise((resolve) => {
+      setTimeout(resolve, 150)
+    })
+  }, [])
+
   const goNext = useCallback(async () => {
+    if (isAnimatingRef.current || isSubmittingRef.current) return
+
     if (
       currentQuestion &&
       currentQuestion.type !== "section_header" &&
@@ -176,11 +195,15 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
     }
 
     if (nextStep > totalQuestions) {
+      isSubmittingRef.current = true
       setIsSubmitting(true)
       setError(null)
       try {
         const result = await onSubmit({ ...answers, ...autoValues })
         if (result.success) {
+          await animateExit()
+          isAnimatingRef.current = false
+          setIsExiting(false)
           setStep(totalQuestions + 1)
           setDirection("forward")
         } else {
@@ -189,11 +212,15 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
       } catch {
         setError("Something went wrong. Please try again.")
       } finally {
+        isSubmittingRef.current = false
         setIsSubmitting(false)
       }
       return
     }
 
+    await animateExit()
+    isAnimatingRef.current = false
+    setIsExiting(false)
     applyAutoFill(nextStep)
     setStep(nextStep)
     setDirection("forward")
@@ -205,16 +232,21 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
     onSubmit,
     findNextVisibleStep,
     applyAutoFill,
+    animateExit,
   ])
 
-  const goBack = useCallback(() => {
+  const goBack = useCallback(async () => {
+    if (isAnimatingRef.current || isSubmittingRef.current) return
     if (step > 0) {
+      await animateExit()
+      isAnimatingRef.current = false
+      setIsExiting(false)
       const prevStep = findPrevVisibleStep(step)
       setStep(prevStep)
       setDirection("backward")
       setFieldError(null)
     }
-  }, [step, findPrevVisibleStep])
+  }, [step, findPrevVisibleStep, animateExit])
 
   const handleReset = useCallback(() => {
     setStep(0)
@@ -271,7 +303,7 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
     }
 
     if (step === totalQuestions + 1) {
-      return <ThankYouScreen onReset={handleReset} />
+      return <ThankYouScreen onReset={onReset ?? handleReset} />
     }
 
     const question = config.questions[step - 1]
@@ -350,7 +382,7 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
       ) : null}
 
       <div className="relative z-10 w-full max-w-2xl">
-        <QuestionWrapper key={step} direction={direction}>
+        <QuestionWrapper key={step} direction={direction} isExiting={isExiting}>
           {renderStep()}
         </QuestionWrapper>
 
@@ -382,7 +414,7 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
       {step >= 1 && step <= totalQuestions ? (
         <button
           onClick={goBack}
-          className="relative z-10 mt-12 cursor-pointer rounded-md px-3 py-2 text-sm text-muted-foreground/50 transition-colors hover:text-muted-foreground active:bg-muted"
+          className="relative z-10 mt-12 cursor-pointer rounded-md px-3 py-2 text-sm text-muted-foreground/50 transition-[transform,color,background-color] duration-150 hover:text-muted-foreground active:scale-[0.97] active:bg-muted"
         >
           <span className="hidden md:inline">
             <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">

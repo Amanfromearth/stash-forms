@@ -96,7 +96,7 @@ function StarRating({
             disabled={disabled}
             tabIndex={isSelected || (!value && position === 1) ? 0 : -1}
             className={cn(
-              "inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition-all duration-150 outline-none active:scale-90",
+              "inline-flex cursor-pointer items-center justify-center rounded-md p-1 transition-[transform,color] duration-150 outline-none active:scale-[0.95]",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               isFilled
                 ? "text-primary"

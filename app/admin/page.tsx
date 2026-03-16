@@ -107,13 +107,14 @@ async function AdminContent({
   }>
 }) {
   const params = await searchParams
-  const page = Math.max(0, parseInt(params.page ?? "0"))
+  const page = Math.max(0, Math.min(parseInt(params.page ?? "0") || 0, 1000))
 
   const conditions = []
 
   if (params.q) {
+    const q = params.q.slice(0, 200)
     conditions.push(
-      sql`${submissions.answers}->>'email' ILIKE ${"%" + params.q + "%"}`
+      sql`${submissions.answers}->>'email' ILIKE ${"%" + q + "%"}`
     )
   }
 

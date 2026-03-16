@@ -1,6 +1,7 @@
 "use server"
 
 import { headers } from "next/headers"
+import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { submissions } from "@/lib/schema"
 import { submissionSchema } from "@/lib/validations"
@@ -68,6 +69,9 @@ export async function upsertPartial(input: {
   answers: Record<string, unknown>
 }): Promise<void> {
   try {
+    const parsed = submissionSchema.safeParse({ answers: input.answers })
+    if (!parsed.success) return
+
     const headersList = await headers()
     const ip =
       headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -80,7 +84,7 @@ export async function upsertPartial(input: {
       .insert(submissions)
       .values({
         sessionId: input.sessionId,
-        answers: input.answers,
+        answers: parsed.data.answers,
         isPartial: true,
         ipHash,
         metadata: { userAgent },
@@ -88,9 +92,12 @@ export async function upsertPartial(input: {
       .onConflictDoUpdate({
         target: submissions.sessionId,
         set: {
-          answers: input.answers,
+          answers: parsed.data.answers,
           submittedAt: new Date(),
         },
+        // Only update if row is still a partial save — never overwrite a
+        // completed submission with stale partial data
+        setWhere: eq(submissions.isPartial, true),
       })
   } catch (error) {
     console.error("[upsertPartial]", error)
