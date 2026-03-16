@@ -29,10 +29,10 @@ export function WelcomeScreen({ config, onStart }: WelcomeScreenProps) {
         className="flex animate-in flex-col gap-4 duration-500 fade-in slide-in-from-bottom-4"
         style={{ animationTimingFunction: "var(--ease-out-quint)" }}
       >
-        <h1 className="font-heading text-4xl leading-tight font-light tracking-tight text-balance md:text-5xl">
+        <h1 className="font-heading text-3xl leading-tight font-light tracking-tight text-balance md:text-5xl">
           🌍 {config.title}
         </h1>
-        <p className="text-lg leading-relaxed text-pretty whitespace-pre-line text-muted-foreground">
+        <p className="text-base md:text-lg leading-relaxed text-pretty whitespace-pre-line text-muted-foreground">
           {config.description}
         </p>
         <p className="text-sm text-muted-foreground/70">
