@@ -340,14 +340,16 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
   }
 
   return (
-    <div
-      className={`relative flex min-h-dvh flex-col items-center justify-center p-6 md:p-12 ${step === 0 ? "landing-gradient" : ""}`}
-    >
+    <div className="relative flex min-h-dvh flex-col items-center justify-center p-6 md:p-12">
+      {step === 0 ? (
+        <div className="absolute top-0 z-0 h-full w-full bg-background bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.45),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(99,102,241,0.25),rgba(0,0,0,0))]" />
+      ) : null}
+
       {showProgressBar ? (
         <ProgressBar current={step} total={totalQuestions} />
       ) : null}
 
-      <div className="w-full max-w-2xl">
+      <div className="relative z-10 w-full max-w-2xl">
         <QuestionWrapper key={step} direction={direction}>
           {renderStep()}
         </QuestionWrapper>
@@ -380,7 +382,7 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
       {step >= 1 && step <= totalQuestions ? (
         <button
           onClick={goBack}
-          className="mt-12 cursor-pointer rounded-md px-3 py-2 text-sm text-muted-foreground/50 transition-colors hover:text-muted-foreground active:bg-muted"
+          className="relative z-10 mt-12 cursor-pointer rounded-md px-3 py-2 text-sm text-muted-foreground/50 transition-colors hover:text-muted-foreground active:bg-muted"
         >
           <span className="hidden md:inline">
             <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-xs">

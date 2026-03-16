@@ -146,27 +146,3 @@
     }
   }
 }
-
-.landing-gradient {
-  background:
-    radial-gradient(
-      ellipse 90% 55% at 50% 0%,
-      oklch(0.75 0.18 277 / 0.35) 0%,
-      oklch(0.82 0.12 280 / 0.2) 35%,
-      oklch(0.92 0.05 277 / 0.08) 65%,
-      transparent 100%
-    ),
-    oklch(1 0 0);
-}
-
-.dark .landing-gradient {
-  background:
-    radial-gradient(
-      ellipse 90% 55% at 50% 0%,
-      oklch(0.4 0.2 277 / 0.4) 0%,
-      oklch(0.3 0.14 280 / 0.25) 35%,
-      oklch(0.2 0.06 277 / 0.1) 65%,
-      transparent 100%
-    ),
-    oklch(0.141 0.005 285.823);
-}
