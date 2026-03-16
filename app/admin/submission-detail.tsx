@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { Submission } from "@/lib/schema"
+import { TimeAgo } from "@/components/time-ago"
 
 interface SubmissionDetailProps {
   submission: Submission
@@ -89,7 +90,6 @@ export function SubmissionDetail({
 
   const answers = submission.answers as Record<string, unknown>
   const email = typeof answers.email === "string" ? answers.email : "—"
-  const date = new Date(submission.submittedAt).toLocaleString()
 
   const answered: typeof questions = []
   const unanswered: typeof questions = []
@@ -121,7 +121,7 @@ export function SubmissionDetail({
               <div>
                 <p className="text-sm font-semibold">{email}</p>
                 <p className="text-xs text-muted-foreground">
-                  {date} ·{" "}
+                  <TimeAgo date={submission.submittedAt} /> ·{" "}
                   <span className="tabular-nums">
                     {answered.length}/{questions.length}
                   </span>{" "}

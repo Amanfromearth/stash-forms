@@ -8,6 +8,7 @@ import { desc, count, sql, and, gte, lte } from "drizzle-orm"
 import { SubmissionDetail } from "./submission-detail"
 import { AdminFilters } from "./admin-filters"
 import { getAnalytics } from "@/lib/analytics"
+import { TimeAgo } from "@/components/time-ago"
 
 const AnalyticsCharts = dynamic(
   () =>
@@ -234,7 +235,7 @@ async function AdminContent({
                   className="transition-colors hover:bg-muted/30"
                 >
                   <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                    {new Date(submission.submittedAt).toLocaleString()}
+                    <TimeAgo date={submission.submittedAt} />
                   </td>
                   <td className="px-4 py-3">
                     {submission.isPartial ? (
