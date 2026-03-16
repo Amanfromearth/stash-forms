@@ -3,7 +3,7 @@ import { Suspense } from "react"
 import dynamic from "next/dynamic"
 import { db } from "@/lib/db"
 import { submissions } from "@/lib/schema"
-import { SURVEY_CONFIG } from "@/lib/form-config"
+import { getFormConfig } from "@/lib/config-loader"
 import { desc, count, sql, and, gte, lte } from "drizzle-orm"
 import { SubmissionDetail } from "./submission-detail"
 import { AdminFilters } from "./admin-filters"
@@ -153,7 +153,7 @@ async function AdminContent({
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [analytics, [{ filteredTotal }], rows] = await Promise.all([
+  const [analytics, [{ filteredTotal }], rows, formConfig] = await Promise.all([
     getAnalytics(),
     db.select({ filteredTotal: count() }).from(submissions).where(whereClause),
     db
@@ -163,11 +163,12 @@ async function AdminContent({
       .orderBy(desc(submissions.submittedAt))
       .limit(PAGE_SIZE)
       .offset(page * PAGE_SIZE),
+    getFormConfig(),
   ])
 
   const totalPages = Math.ceil(filteredTotal / PAGE_SIZE)
 
-  const questionLabels = SURVEY_CONFIG.questions
+  const questionLabels = formConfig.questions
     .filter((q) => q.type !== "section_header")
     .map((q) => ({ id: q.id, label: q.label, type: q.type }))
 
