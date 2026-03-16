@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { Submission } from "@/lib/schema"
-import type { FormConfig, Question } from "@/lib/form-config"
 
 interface SubmissionDetailProps {
   submission: Submission
-  config: FormConfig
+  questions: { id: string; label: string; type: string }[]
 }
 
 function hasValue(v: unknown): boolean {
@@ -20,7 +19,7 @@ function AnswerDisplay({
   question,
   value,
 }: {
-  question: Question
+  question: { id: string; label: string; type: string }
   value: unknown
 }) {
   if (!hasValue(value)) {
@@ -42,11 +41,7 @@ function AnswerDisplay({
     )
   }
 
-  if (
-    question.type === "multiple_choice" &&
-    "options" in question &&
-    question.options.length <= 5
-  ) {
+  if (question.type === "multiple_choice") {
     return (
       <span className="inline-flex rounded-md bg-muted px-2.5 py-1 text-sm font-medium">
         {String(value)}
@@ -67,7 +62,7 @@ function AnswerDisplay({
 
 export function SubmissionDetail({
   submission,
-  config,
+  questions,
 }: SubmissionDetailProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [showUnanswered, setShowUnanswered] = useState(false)
@@ -96,11 +91,15 @@ export function SubmissionDetail({
   const email = typeof answers.email === "string" ? answers.email : "—"
   const date = new Date(submission.submittedAt).toLocaleString()
 
-  const visibleQuestions = config.questions.filter(
-    (q) => q.type !== "section_header"
-  )
-  const answered = visibleQuestions.filter((q) => hasValue(answers[q.id]))
-  const unanswered = visibleQuestions.filter((q) => !hasValue(answers[q.id]))
+  const answered: typeof questions = []
+  const unanswered: typeof questions = []
+  for (const q of questions) {
+    if (hasValue(answers[q.id])) {
+      answered.push(q)
+    } else {
+      unanswered.push(q)
+    }
+  }
 
   return (
     <>
@@ -124,7 +123,7 @@ export function SubmissionDetail({
                 <p className="text-xs text-muted-foreground">
                   {date} ·{" "}
                   <span className="tabular-nums">
-                    {answered.length}/{visibleQuestions.length}
+                    {answered.length}/{questions.length}
                   </span>{" "}
                   answered
                   {submission.isPartial ? (

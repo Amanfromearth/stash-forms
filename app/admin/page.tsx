@@ -165,6 +165,10 @@ async function AdminContent({
 
   const totalPages = Math.ceil(filteredTotal / PAGE_SIZE)
 
+  const questionLabels = SURVEY_CONFIG.questions
+    .filter((q) => q.type !== "section_header")
+    .map((q) => ({ id: q.id, label: q.label, type: q.type }))
+
   const paginationParams = new URLSearchParams()
   if (params.q) paginationParams.set("q", params.q)
   if (params.age) paginationParams.set("age", params.age)
@@ -255,7 +259,7 @@ async function AdminContent({
                   <td className="px-4 py-3">
                     <SubmissionDetail
                       submission={submission}
-                      config={SURVEY_CONFIG}
+                      questions={questionLabels}
                     />
                   </td>
                 </tr>

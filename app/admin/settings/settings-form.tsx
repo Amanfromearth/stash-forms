@@ -19,44 +19,47 @@ export function SettingsForm({ initialConfig }: { initialConfig: FormConfig }) {
   }>({ type: "idle" })
 
   function updateQuestion(index: number, patch: Partial<Question>) {
-    setConfig((prev) => {
-      const next = structuredClone(prev)
-      next.questions[index] = { ...next.questions[index], ...patch } as Question
-      return next
-    })
+    setConfig((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q, i) =>
+        i === index ? ({ ...q, ...patch } as Question) : q
+      ),
+    }))
   }
 
   function updateOption(qIndex: number, oIndex: number, value: string) {
-    setConfig((prev) => {
-      const next = structuredClone(prev)
-      const q = next.questions[qIndex]
-      if ("options" in q) {
-        q.options[oIndex] = value
-      }
-      return next
-    })
+    setConfig((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => {
+        if (i !== qIndex || !("options" in q)) return q
+        const options = [...q.options]
+        options[oIndex] = value
+        return { ...q, options } as Question
+      }),
+    }))
   }
 
   function addOption(qIndex: number) {
-    setConfig((prev) => {
-      const next = structuredClone(prev)
-      const q = next.questions[qIndex]
-      if ("options" in q) {
-        q.options.push("")
-      }
-      return next
-    })
+    setConfig((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => {
+        if (i !== qIndex || !("options" in q)) return q
+        return { ...q, options: [...q.options, ""] } as Question
+      }),
+    }))
   }
 
   function removeOption(qIndex: number, oIndex: number) {
-    setConfig((prev) => {
-      const next = structuredClone(prev)
-      const q = next.questions[qIndex]
-      if ("options" in q && q.options.length > 1) {
-        q.options.splice(oIndex, 1)
-      }
-      return next
-    })
+    setConfig((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => {
+        if (i !== qIndex || !("options" in q) || q.options.length <= 1) return q
+        return {
+          ...q,
+          options: q.options.filter((_, j) => j !== oIndex),
+        } as Question
+      }),
+    }))
   }
 
   function handleSave() {
