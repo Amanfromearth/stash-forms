@@ -31,7 +31,7 @@ export function AdminFilters() {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
         <input
           type="text"
           placeholder="Search email..."
@@ -78,6 +78,16 @@ export function AdminFilters() {
           <option value="">All investors</option>
           <option value="Yes">Invested abroad</option>
           <option value="No">Not invested</option>
+        </select>
+
+        <select
+          value={searchParams.get("status") ?? ""}
+          onChange={(e) => updateFilter("status", e.target.value)}
+          className="h-9 rounded-md border border-border bg-transparent px-2 text-sm transition-colors outline-none focus:border-primary"
+        >
+          <option value="">All status</option>
+          <option value="complete">Complete</option>
+          <option value="partial">Partial</option>
         </select>
 
         {hasFilters ? (

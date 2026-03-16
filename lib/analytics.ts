@@ -5,18 +5,25 @@ import { count, sql, desc } from "drizzle-orm"
 export async function getAnalytics() {
   const [[{ total }], [{ todayCount }], dailyTrend, allAnswers] =
     await Promise.all([
-      db.select({ total: count() }).from(submissions),
+      db
+        .select({ total: count() })
+        .from(submissions)
+        .where(sql`${submissions.isPartial} = false`),
       db
         .select({ todayCount: count() })
         .from(submissions)
-        .where(sql`${submissions.submittedAt} >= CURRENT_DATE`),
+        .where(
+          sql`${submissions.submittedAt} >= CURRENT_DATE AND ${submissions.isPartial} = false`
+        ),
       db
         .select({
           date: sql<string>`TO_CHAR(${submissions.submittedAt}, 'Mon DD')`,
           count: count(),
         })
         .from(submissions)
-        .where(sql`${submissions.submittedAt} >= NOW() - INTERVAL '30 days'`)
+        .where(
+          sql`${submissions.submittedAt} >= NOW() - INTERVAL '30 days' AND ${submissions.isPartial} = false`
+        )
         .groupBy(
           sql`TO_CHAR(${submissions.submittedAt}, 'Mon DD'), DATE(${submissions.submittedAt})`
         )

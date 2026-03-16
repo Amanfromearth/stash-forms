@@ -1,0 +1,1 @@
+ALTER TABLE "submissions" DROP CONSTRAINT "submissions_session_id_unique";

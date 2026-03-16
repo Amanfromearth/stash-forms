@@ -6,13 +6,12 @@ import { submissions } from "@/lib/schema"
 import { submissionSchema } from "@/lib/validations"
 import { hashIP } from "@/lib/ip"
 
-export async function submitSurvey(input: unknown): Promise<{
-  success: boolean
-  error?: string
-}> {
+export async function submitSurvey(input: {
+  answers: Record<string, unknown>
+  sessionId?: string
+}): Promise<{ success: boolean; error?: string }> {
   try {
-    // 1. Validate input with Zod
-    const parsed = submissionSchema.safeParse(input)
+    const parsed = submissionSchema.safeParse({ answers: input.answers })
     if (!parsed.success) {
       return {
         success: false,
@@ -20,31 +19,80 @@ export async function submitSurvey(input: unknown): Promise<{
       }
     }
 
-    // 2. Get request headers (MUST await in Next.js 16)
     const headersList = await headers()
     const ip =
       headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
       headersList.get("x-real-ip") ??
       "unknown"
     const userAgent = headersList.get("user-agent") ?? undefined
-
-    // 3. Hash IP (never store raw IP — GDPR compliance)
     const ipHash = hashIP(ip)
 
-    // 4. Insert into database (Drizzle auto-parameterizes — SQL injection safe)
-    await db.insert(submissions).values({
-      answers: parsed.data.answers,
-      ipHash,
-      metadata: { userAgent },
-    })
+    if (input.sessionId) {
+      await db
+        .insert(submissions)
+        .values({
+          sessionId: input.sessionId,
+          answers: parsed.data.answers,
+          isPartial: false,
+          ipHash,
+          metadata: { userAgent },
+        })
+        .onConflictDoUpdate({
+          target: submissions.sessionId,
+          set: {
+            answers: parsed.data.answers,
+            isPartial: false,
+            ipHash,
+            metadata: { userAgent },
+            submittedAt: new Date(),
+          },
+        })
+    } else {
+      await db.insert(submissions).values({
+        answers: parsed.data.answers,
+        isPartial: false,
+        ipHash,
+        metadata: { userAgent },
+      })
+    }
 
     return { success: true }
   } catch (error) {
-    // Log server-side but NEVER expose raw error to client
     console.error("[submitSurvey] Database error:", error)
-    return {
-      success: false,
-      error: "Failed to submit. Please try again.",
-    }
+    return { success: false, error: "Failed to submit. Please try again." }
+  }
+}
+
+export async function upsertPartial(input: {
+  sessionId: string
+  answers: Record<string, unknown>
+}): Promise<void> {
+  try {
+    const headersList = await headers()
+    const ip =
+      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      headersList.get("x-real-ip") ??
+      "unknown"
+    const ipHash = hashIP(ip)
+    const userAgent = headersList.get("user-agent") ?? undefined
+
+    await db
+      .insert(submissions)
+      .values({
+        sessionId: input.sessionId,
+        answers: input.answers,
+        isPartial: true,
+        ipHash,
+        metadata: { userAgent },
+      })
+      .onConflictDoUpdate({
+        target: submissions.sessionId,
+        set: {
+          answers: input.answers,
+          submittedAt: new Date(),
+        },
+      })
+  } catch (error) {
+    console.error("[upsertPartial]", error)
   }
 }

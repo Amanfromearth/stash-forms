@@ -9,6 +9,7 @@ import type {
   MultiSelectQuestion,
   SectionHeaderQuestion,
 } from "@/lib/form-config"
+import { upsertPartial } from "@/app/actions/submit"
 import { ProgressBar } from "./progress-bar"
 import { QuestionWrapper } from "./question-wrapper"
 import { WelcomeScreen } from "./welcome-screen"
@@ -45,12 +46,13 @@ function isQuestionVisible(
 
 interface SurveyFormProps {
   config: FormConfig
+  sessionId: string
   onSubmit: (
     answers: Record<string, unknown>
   ) => Promise<{ success: boolean; error?: string }>
 }
 
-export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
+export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
   const totalQuestions = config.questions.length
 
   const [step, setStep] = useState(0)
@@ -59,6 +61,22 @@ export function SurveyForm({ config, onSubmit }: SurveyFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fieldError, setFieldError] = useState<string | null>(null)
+
+  const filledCount = Object.values(answers).filter(
+    (v) =>
+      v !== null &&
+      v !== undefined &&
+      v !== "" &&
+      !(Array.isArray(v) && v.length === 0)
+  ).length
+
+  useEffect(() => {
+    if (filledCount < 3) return
+    const timer = setTimeout(() => {
+      upsertPartial({ sessionId, answers })
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [answers, filledCount, sessionId])
 
   const currentQuestion: Question | undefined =
     step >= 1 && step <= totalQuestions ? config.questions[step - 1] : undefined

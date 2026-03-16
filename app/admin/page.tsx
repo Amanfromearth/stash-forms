@@ -79,6 +79,7 @@ export default async function AdminPage({
     invested?: string
     from?: string
     to?: string
+    status?: string
   }>
 }) {
   return (
@@ -101,6 +102,7 @@ async function AdminContent({
     invested?: string
     from?: string
     to?: string
+    status?: string
   }>
 }) {
   const params = await searchParams
@@ -140,6 +142,13 @@ async function AdminContent({
     conditions.push(lte(submissions.submittedAt, toDate))
   }
 
+  if (params.status === "complete") {
+    conditions.push(sql`${submissions.isPartial} = false`)
+  }
+  if (params.status === "partial") {
+    conditions.push(sql`${submissions.isPartial} = true`)
+  }
+
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
   const [analytics, [{ filteredTotal }], rows] = await Promise.all([
@@ -163,6 +172,7 @@ async function AdminContent({
   if (params.invested) paginationParams.set("invested", params.invested)
   if (params.from) paginationParams.set("from", params.from)
   if (params.to) paginationParams.set("to", params.to)
+  if (params.status) paginationParams.set("status", params.status)
 
   const buildPageUrl = (p: number) => {
     const u = new URLSearchParams(paginationParams)
@@ -195,6 +205,9 @@ async function AdminContent({
                 Submitted
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                Status
+              </th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                 Email
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
@@ -219,6 +232,17 @@ async function AdminContent({
                   <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
                     {new Date(submission.submittedAt).toLocaleString()}
                   </td>
+                  <td className="px-4 py-3">
+                    {(submission as any).isPartial ? (
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        Partial
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                        Complete
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {String(answers.email ?? "—")}
                   </td>
@@ -240,7 +264,7 @@ async function AdminContent({
             {rows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   {whereClause ? "No submissions found" : "No submissions yet"}

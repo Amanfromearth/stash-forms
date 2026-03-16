@@ -15,3 +15,8 @@ export const submissionSchema = z.object({
 })
 
 export type SubmissionInput = z.infer<typeof submissionSchema>
+
+export const partialSubmissionSchema = z.object({
+  sessionId: z.string().uuid(),
+  answers: z.record(z.string(), z.unknown()),
+})
