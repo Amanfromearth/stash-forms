@@ -12,7 +12,11 @@ import { getAnalytics } from "@/lib/analytics"
 const AnalyticsCharts = dynamic(
   () =>
     import("./analytics-charts").then((m) => ({ default: m.AnalyticsCharts })),
-  { loading: () => <div className="h-[600px]" /> }
+  {
+    loading: () => (
+      <div className="h-[600px] animate-pulse rounded-xl bg-muted/30" />
+    ),
+  }
 )
 
 export const metadata: Metadata = {
@@ -20,6 +24,49 @@ export const metadata: Metadata = {
 }
 
 const PAGE_SIZE = 25
+
+function AdminSkeleton() {
+  return (
+    <div className="animate-pulse space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="space-y-2 rounded-xl border border-border p-6"
+          >
+            <div className="h-3 w-24 rounded bg-muted" />
+            <div className="h-8 w-16 rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="h-64 rounded-xl border border-border p-6" />
+        <div className="h-64 rounded-xl border border-border p-6" />
+      </div>
+      <div className="h-9 w-full rounded-md bg-muted" />
+      <div className="rounded-lg border border-border">
+        <div className="bg-muted/50 px-4 py-3">
+          <div className="flex gap-16">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-4 w-20 rounded bg-muted" />
+            ))}
+          </div>
+        </div>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="border-t border-border px-4 py-3">
+            <div className="flex gap-16">
+              <div className="h-4 w-32 rounded bg-muted" />
+              <div className="h-4 w-36 rounded bg-muted" />
+              <div className="h-4 w-12 rounded bg-muted" />
+              <div className="h-4 w-24 rounded bg-muted" />
+              <div className="h-4 w-10 rounded bg-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default async function AdminPage({
   searchParams,
@@ -36,15 +83,7 @@ export default async function AdminPage({
 }) {
   return (
     <div className="space-y-6">
-      <Suspense
-        fallback={
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="h-24 rounded-xl border border-border" />
-            <div className="h-24 rounded-xl border border-border" />
-            <div className="h-24 rounded-xl border border-border" />
-          </div>
-        }
-      >
+      <Suspense fallback={<AdminSkeleton />}>
         <AdminContent searchParams={searchParams} />
       </Suspense>
     </div>

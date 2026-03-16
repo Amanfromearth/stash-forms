@@ -310,6 +310,17 @@ export function SettingsForm({ initialConfig }: { initialConfig: FormConfig }) {
           </Card>
         ))}
       </div>
+
+      <div className="flex items-center gap-3 border-t border-border pt-6">
+        <Button onClick={handleSave} disabled={isPending}>
+          {isPending ? "Saving..." : "Save Changes"}
+        </Button>
+        {status.type === "success" ? (
+          <p className="text-sm text-green-600">{status.message}</p>
+        ) : status.type === "error" ? (
+          <p className="text-sm text-destructive">{status.message}</p>
+        ) : null}
+      </div>
     </div>
   )
 }
