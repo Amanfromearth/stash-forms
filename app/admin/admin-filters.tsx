@@ -1,11 +1,12 @@
 "use client"
 
 import { useRouter, useSearchParams } from "next/navigation"
-import { useCallback } from "react"
+import { useCallback, useRef } from "react"
 
 export function AdminFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const updateFilter = useCallback(
     (key: string, value: string) => {
@@ -37,8 +38,8 @@ export function AdminFilters() {
           placeholder="Search email..."
           defaultValue={searchParams.get("q") ?? ""}
           onChange={(e) => {
-            clearTimeout((window as any).__filterTimeout)
-            ;(window as any).__filterTimeout = setTimeout(() => {
+            clearTimeout(debounceRef.current)
+            debounceRef.current = setTimeout(() => {
               updateFilter("q", e.target.value)
             }, 300)
           }}

@@ -233,7 +233,7 @@ async function AdminContent({
                     {new Date(submission.submittedAt).toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
-                    {(submission as any).isPartial ? (
+                    {submission.isPartial ? (
                       <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
                         Partial
                       </span>

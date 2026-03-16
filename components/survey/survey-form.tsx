@@ -260,11 +260,6 @@ export function SurveyForm({ config, sessionId, onSubmit }: SurveyFormProps) {
   const isSectionHeader = currentQuestion?.type === "section_header"
   const showProgressBar =
     step >= 1 && step <= totalQuestions && !isSectionHeader
-  const isTextStep =
-    currentQuestion?.type === "short_text" ||
-    currentQuestion?.type === "email" ||
-    currentQuestion?.type === "long_text"
-  const isMultiSelect = currentQuestion?.type === "multi_select"
   const showNextButton = step >= 1 && step <= totalQuestions && !isSectionHeader
 
   const isLastVisibleStep =
