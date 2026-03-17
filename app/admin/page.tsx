@@ -7,6 +7,7 @@ import { getFormConfig } from "@/lib/config-loader"
 import { desc, count, sql, and, gte, lte } from "drizzle-orm"
 import { SubmissionDetail } from "./submission-detail"
 import { AdminFilters } from "./admin-filters"
+import { DownloadCSV } from "./download-csv"
 import { getAnalytics } from "@/lib/analytics"
 import { TimeAgo } from "@/components/time-ago"
 
@@ -202,6 +203,9 @@ async function AdminContent({
             ? `${analytics.total} total submission${analytics.total !== 1 ? "s" : ""}`
             : `${filteredTotal} of ${analytics.total} submissions`}
         </p>
+        <Suspense fallback={null}>
+          <DownloadCSV />
+        </Suspense>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border">
