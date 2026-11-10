@@ -3,32 +3,33 @@ import { Geist_Mono, DM_Sans } from "next/font/google"
 import localFont from "next/font/local"
 
 import "./globals.css"
+import { MotionProvider } from "@/components/interior/motion-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: {
-    default: "Global Investing Survey — How India Thinks About Global Assets",
+    default: "Global User Research Questionnaire",
     template: "%s | Global Investing Survey",
   },
   description:
-    "A short survey to learn how people in India save, invest, and think about owning global assets like US stocks or foreign currencies.",
+    "A short survey about how people save, invest, and discover global investment opportunities.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>",
   },
   openGraph: {
-    title: "🌍 How Does India Think About Global Investing?",
+    title: "🌍 Global User Research Questionnaire",
     description:
-      "Take a 3-minute survey to help us understand how Indians save, invest, and think about owning global assets like US stocks and foreign currencies.",
+      "Share how you save, invest, and discover global investment opportunities.",
     type: "website",
-    locale: "en_IN",
+    locale: "en",
     siteName: "Global Investing Survey",
   },
   twitter: {
     card: "summary_large_image",
-    title: "🌍 How Does India Think About Global Investing?",
+    title: "🌍 Global User Research Questionnaire",
     description:
-      "Take a 3-minute survey to help us understand how Indians save, invest, and think about owning global assets.",
+      "Share how you save, invest, and discover global investment opportunities.",
   },
 }
 
@@ -64,7 +65,9 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <MotionProvider>{children}</MotionProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -1,6 +1,8 @@
 import { z } from "zod"
 
 export const submissionSchema = z.object({
+  sessionId: z.string().uuid().optional(),
+  formVersion: z.number().int().positive().default(1),
   answers: z
     .record(
       z.string(),
@@ -16,7 +18,6 @@ export const submissionSchema = z.object({
 
 export type SubmissionInput = z.infer<typeof submissionSchema>
 
-export const partialSubmissionSchema = z.object({
+export const partialSubmissionSchema = submissionSchema.extend({
   sessionId: z.string().uuid(),
-  answers: z.record(z.string(), z.unknown()),
 })

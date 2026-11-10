@@ -1,34 +1,47 @@
+import { cache } from "react"
 import { db } from "./db"
-import { formConfig } from "./schema"
-import { SURVEY_CONFIG, type FormConfig } from "./form-config"
-import { eq } from "drizzle-orm"
+import { formVersions } from "./schema"
+import type { FormConfig, VersionedFormConfig } from "./form-config"
+import { desc, eq } from "drizzle-orm"
 
-export async function getFormConfig(): Promise<FormConfig> {
+export const getFormConfig = cache(
+  async (version?: number): Promise<VersionedFormConfig> => {
+    const [row] = await db
+      .select()
+      .from(formVersions)
+      .where(
+        version === undefined ? undefined : eq(formVersions.version, version)
+      )
+      .orderBy(desc(formVersions.version))
+      .limit(1)
+
+    if (!row)
+      throw new Error(
+        "Form version not found. Run the database migrations first."
+      )
+    return { ...row.config, version: row.version }
+  }
+)
+
+export const getFormVersions = cache(async () => {
   const rows = await db
     .select()
-    .from(formConfig)
-    .where(eq(formConfig.id, "default"))
-    .limit(1)
+    .from(formVersions)
+    .orderBy(desc(formVersions.version))
+  return rows.map((row) => ({ version: row.version, title: row.config.title }))
+})
 
-  if (rows.length > 0) {
-    return rows[0].config as FormConfig
-  }
-
-  // Seed default config on first load
-  await db
-    .insert(formConfig)
-    .values({ id: "default", config: SURVEY_CONFIG })
-    .onConflictDoNothing()
-
-  return SURVEY_CONFIG
-}
-
-export async function saveFormConfig(config: FormConfig): Promise<void> {
-  await db
-    .insert(formConfig)
-    .values({ id: "default", config, updatedAt: new Date() })
-    .onConflictDoUpdate({
-      target: formConfig.id,
-      set: { config, updatedAt: new Date() },
+export async function saveFormConfig(config: FormConfig): Promise<number> {
+  // Deliberately copy only config fields: the client cannot choose a version.
+  const [row] = await db
+    .insert(formVersions)
+    .values({
+      config: {
+        title: config.title,
+        description: config.description,
+        questions: config.questions,
+      },
     })
+    .returning({ version: formVersions.version })
+  return row.version
 }

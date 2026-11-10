@@ -1,19 +1,24 @@
 import { db } from "./db"
 import { submissions } from "./schema"
-import { count, sql, desc } from "drizzle-orm"
+import type { VersionedFormConfig } from "./form-config"
+import { count, sql, desc, eq, and } from "drizzle-orm"
 
-export async function getAnalytics() {
+export async function getAnalytics(config: VersionedFormConfig) {
+  const versionCondition = eq(submissions.formVersion, config.version)
   const [[{ total }], [{ todayCount }], dailyTrend, allAnswers] =
     await Promise.all([
       db
         .select({ total: count() })
         .from(submissions)
-        .where(sql`${submissions.isPartial} = false`),
+        .where(and(versionCondition, eq(submissions.isPartial, false))),
       db
         .select({ todayCount: count() })
         .from(submissions)
         .where(
-          sql`${submissions.submittedAt} >= CURRENT_DATE AND ${submissions.isPartial} = false`
+          and(
+            versionCondition,
+            sql`${submissions.submittedAt} >= CURRENT_DATE AND ${submissions.isPartial} = false`
+          )
         ),
       db
         .select({
@@ -22,7 +27,10 @@ export async function getAnalytics() {
         })
         .from(submissions)
         .where(
-          sql`${submissions.submittedAt} >= NOW() - INTERVAL '30 days' AND ${submissions.isPartial} = false`
+          and(
+            versionCondition,
+            sql`${submissions.submittedAt} >= NOW() - INTERVAL '30 days' AND ${submissions.isPartial} = false`
+          )
         )
         .groupBy(
           sql`TO_CHAR(${submissions.submittedAt}, 'Mon DD'), DATE(${submissions.submittedAt})`
@@ -32,33 +40,22 @@ export async function getAnalytics() {
       db
         .select({ answers: submissions.answers })
         .from(submissions)
-        .orderBy(desc(submissions.submittedAt))
-        .limit(500),
+        .where(and(versionCondition, eq(submissions.isPartial, false)))
+        .orderBy(desc(submissions.submittedAt)),
     ])
 
-  const ageData = aggregateField(allAnswers, "age_range", [
-    "18–24",
-    "25–30",
-    "30–40",
-    "40+",
-  ])
-  const occupationData = aggregateField(allAnswers, "occupation", [
-    "Student",
-    "Salaried employee",
-    "Freelancer / remote worker",
-    "Business owner",
-    "Others",
-  ])
-  const foreignInvestData = aggregateField(allAnswers, "invested_foreign", [
-    "Yes",
-    "No",
-  ])
-  const savingsData = aggregateField(allAnswers, "monthly_savings", [
-    "Less than ₹5k",
-    "₹5k–₹20k",
-    "₹20k–₹50k",
-    "₹50k+",
-  ])
+  const aggregate = (id: string) => {
+    const question = config.questions.find((q) => q.id === id)
+    return aggregateField(
+      allAnswers,
+      id,
+      question && "options" in question ? question.options : []
+    )
+  }
+  const ageData = aggregate("age_range")
+  const occupationData = aggregate("occupation")
+  const foreignInvestData = aggregate("invested_foreign")
+  const savingsData = aggregate("monthly_savings")
 
   return {
     total,

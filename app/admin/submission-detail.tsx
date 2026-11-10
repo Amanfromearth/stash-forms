@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Dialog } from "@base-ui/react/dialog"
+import { useState } from "react"
 import { cn } from "@/lib/utils"
 import type { Submission } from "@/lib/schema"
 import { TimeAgo } from "@/components/time-ago"
@@ -24,7 +25,9 @@ function AnswerDisplay({
   value: unknown
 }) {
   if (!hasValue(value)) {
-    return <p className="text-sm text-muted-foreground/40 italic">—</p>
+    return (
+      <p className="text-sm text-muted-foreground/40 italic">Not provided</p>
+    )
   }
 
   if (Array.isArray(value)) {
@@ -65,31 +68,11 @@ export function SubmissionDetail({
   submission,
   questions,
 }: SubmissionDetailProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [showUnanswered, setShowUnanswered] = useState(false)
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false)
-    }
-    window.addEventListener("keydown", handleKey)
-    return () => window.removeEventListener("keydown", handleKey)
-  }, [isOpen])
-
   const answers = submission.answers as Record<string, unknown>
-  const email = typeof answers.email === "string" ? answers.email : "—"
+  const email =
+    typeof answers.email === "string"
+      ? answers.email
+      : String(answers.country ?? "Response")
 
   const answered: typeof questions = []
   const unanswered: typeof questions = []
@@ -102,98 +85,116 @@ export function SubmissionDetail({
   }
 
   return (
-    <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="text-sm text-primary hover:underline"
-      >
+    <Dialog.Root>
+      <Dialog.Trigger className="text-sm text-primary hover:underline">
         View
-      </button>
-
-      {isOpen ? (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={() => setIsOpen(false)}
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40" />
+        <Dialog.Popup className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-2xl border-t border-border bg-background shadow-lg">
+          <ResponseHeader
+            submission={submission}
+            email={email}
+            answeredCount={answered.length}
+            total={questions.length}
           />
-          <div className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-2xl border-t border-border bg-background shadow-lg">
-            <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
-              <div>
-                <p className="text-sm font-semibold">{email}</p>
-                <p className="text-xs text-muted-foreground">
-                  <TimeAgo date={submission.submittedAt} /> ·{" "}
-                  <span className="tabular-nums">
-                    {answered.length}/{questions.length}
-                  </span>{" "}
-                  answered
-                  {submission.isPartial ? (
-                    <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                      Partial
-                    </span>
-                  ) : null}
-                </p>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="flex size-8 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Close"
-              >
-                ×
-              </button>
+          <div className="flex-1 overflow-y-auto">
+            <div className="divide-y divide-border">
+              {answered.map((question) => (
+                <div key={question.id} className="px-5 py-3.5">
+                  <p className="mb-1.5 line-clamp-1 text-xs font-medium text-muted-foreground">
+                    {question.label}
+                  </p>
+                  <AnswerDisplay
+                    question={question}
+                    value={answers[question.id]}
+                  />
+                </div>
+              ))}
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-              <div className="divide-y divide-border">
-                {answered.map((question) => (
-                  <div key={question.id} className="px-5 py-3.5">
-                    <p className="mb-1.5 line-clamp-1 text-xs font-medium text-muted-foreground">
-                      {question.label}
-                    </p>
-                    <AnswerDisplay
-                      question={question}
-                      value={answers[question.id]}
-                    />
-                  </div>
-                ))}
-              </div>
+            <UnansweredQuestions questions={unanswered} />
 
-              {unanswered.length > 0 ? (
-                <div className="border-t border-border px-5 py-3">
-                  <button
-                    onClick={() => setShowUnanswered(!showUnanswered)}
-                    className={cn(
-                      "text-xs text-muted-foreground/60 transition-colors hover:text-muted-foreground"
-                    )}
-                  >
-                    {showUnanswered ? "Hide" : "Show"}{" "}
-                    <span className="tabular-nums">{unanswered.length}</span>{" "}
-                    unanswered
-                  </button>
-                  {showUnanswered ? (
-                    <div className="mt-2 space-y-2">
-                      {unanswered.map((q) => (
-                        <p
-                          key={q.id}
-                          className="line-clamp-1 text-xs text-muted-foreground/40"
-                        >
-                          {q.label}
-                        </p>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-
-              <div className="border-t border-border px-5 py-3">
-                <p className="text-[11px] text-muted-foreground/40 tabular-nums">
-                  {submission.ipHash?.slice(0, 12)}… ·{" "}
-                  {submission.id.slice(0, 8)}
-                </p>
-              </div>
+            <div className="border-t border-border px-5 py-3">
+              <p className="text-[11px] text-muted-foreground/40 tabular-nums">
+                {submission.ipHash?.slice(0, 12)}… · {submission.id.slice(0, 8)}
+              </p>
             </div>
           </div>
-        </>
-      ) : null}
-    </>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
+}
+
+function ResponseHeader({
+  submission,
+  email,
+  answeredCount,
+  total,
+}: {
+  submission: Submission
+  email: string
+  answeredCount: number
+  total: number
+}) {
+  return (
+    <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
+      <div>
+        <Dialog.Title className="text-sm font-semibold">{email}</Dialog.Title>
+        <p className="text-xs text-muted-foreground">
+          v{submission.formVersion} · <TimeAgo date={submission.submittedAt} />{" "}
+          ·{" "}
+          <span className="tabular-nums">
+            {answeredCount}/{total}
+          </span>{" "}
+          answered
+          {submission.isPartial ? (
+            <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+              Partial
+            </span>
+          ) : null}
+        </p>
+      </div>
+      <Dialog.Close
+        className="flex size-8 items-center justify-center rounded-full text-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        aria-label="Close"
+      >
+        ×
+      </Dialog.Close>
+    </div>
+  )
+}
+
+function UnansweredQuestions({
+  questions: unanswered,
+}: {
+  questions: SubmissionDetailProps["questions"]
+}) {
+  const [showUnanswered, setShowUnanswered] = useState(false)
+  return unanswered.length > 0 ? (
+    <div className="border-t border-border px-5 py-3">
+      <button
+        onClick={() => setShowUnanswered(!showUnanswered)}
+        className={cn(
+          "text-xs text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+        )}
+      >
+        {showUnanswered ? "Hide" : "Show"}{" "}
+        <span className="tabular-nums">{unanswered.length}</span> unanswered
+      </button>
+      {showUnanswered ? (
+        <div className="mt-2 space-y-2">
+          {unanswered.map((q) => (
+            <p
+              key={q.id}
+              className="line-clamp-1 text-xs text-muted-foreground/40"
+            >
+              {q.label}
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  ) : null
 }

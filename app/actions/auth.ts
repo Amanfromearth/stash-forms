@@ -2,24 +2,20 @@
 
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { createHmac } from "crypto"
-
-const SESSION_COOKIE = "admin_session"
-
-function generateSessionToken(): string {
-  const secret = process.env.SESSION_SECRET
-  if (!secret) throw new Error("SESSION_SECRET env var is required")
-  const timestamp = Date.now().toString()
-  const hmac = createHmac("sha256", secret).update(timestamp).digest("hex")
-  return `${timestamp}.${hmac}`
-}
+import { createHash, timingSafeEqual } from "node:crypto"
+import {
+  ADMIN_SESSION_COOKIE,
+  ADMIN_SESSION_MAX_AGE,
+  createAdminSession,
+} from "@/lib/admin-session"
+import { checkRequestLimit } from "@/lib/request-limits"
 
 export async function loginAction(
   formData: FormData
 ): Promise<{ error?: string }> {
-  const password = formData.get("password") as string
+  const password = formData.get("password")
 
-  if (!password) {
+  if (typeof password !== "string" || !password || password.length > 1024) {
     return { error: "Password is required" }
   }
 
@@ -29,18 +25,33 @@ export async function loginAction(
     return { error: "Server configuration error" }
   }
 
-  if (password !== adminPassword) {
-    // Artificial delay to mitigate brute force
-    await new Promise((resolve) => setTimeout(resolve, 500))
+  try {
+    const limit = await checkRequestLimit("login")
+    if (!limit.allowed) {
+      return {
+        error: `Too many sign-in attempts. Try again in ${Math.ceil(limit.retryAfterSeconds / 60)} minutes.`,
+      }
+    }
+  } catch {
+    console.error("[loginAction] Security rate limit unavailable")
+    return {
+      error: "Sign-in is temporarily unavailable. Please try again shortly.",
+    }
+  }
+
+  const digest = (value: string) => createHash("sha256").update(value).digest()
+  if (!timingSafeEqual(digest(password), digest(adminPassword))) {
     return { error: "Invalid password" }
   }
 
   const cookieStore = await cookies()
-  cookieStore.set(SESSION_COOKIE, generateSessionToken(), {
+  const secret = process.env.SESSION_SECRET
+  if (!secret) return { error: "Server configuration error" }
+  cookieStore.set(ADMIN_SESSION_COOKIE, createAdminSession(secret), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24, // 24 hours
+    maxAge: ADMIN_SESSION_MAX_AGE,
     path: "/",
   })
 
@@ -49,6 +60,6 @@ export async function loginAction(
 
 export async function logoutAction(): Promise<void> {
   const cookieStore = await cookies()
-  cookieStore.delete(SESSION_COOKIE)
+  cookieStore.delete(ADMIN_SESSION_COOKIE)
   redirect("/admin/login")
 }

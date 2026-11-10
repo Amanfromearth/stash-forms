@@ -21,13 +21,15 @@ function ThemeProvider({
   )
 }
 
+const subscribe = () => () => {}
+
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = React.useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false
+  )
 
   if (!mounted) return null
 

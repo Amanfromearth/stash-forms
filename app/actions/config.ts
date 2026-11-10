@@ -1,37 +1,27 @@
 "use server"
 
-import { cookies } from "next/headers"
-import { createHmac } from "crypto"
+import { isAdminAuthenticated } from "@/lib/admin-auth"
 import { revalidatePath } from "next/cache"
+import { formConfigSchema } from "@/lib/form-config-validation"
 import { saveFormConfig } from "@/lib/config-loader"
 import type { FormConfig } from "@/lib/form-config"
 
-async function verifyAdmin(): Promise<boolean> {
-  const secret = process.env.SESSION_SECRET
-  if (!secret) return false
-  const cookieStore = await cookies()
-  const token = cookieStore.get("admin_session")?.value
-  if (!token) return false
-  const [timestamp, hmac] = token.split(".")
-  if (!timestamp || !hmac) return false
-  const age = Date.now() - parseInt(timestamp)
-  if (age > 24 * 60 * 60 * 1000) return false
-  const expected = createHmac("sha256", secret).update(timestamp).digest("hex")
-  return hmac === expected
-}
-
 export async function updateFormConfigAction(
   config: FormConfig
-): Promise<{ success: boolean; error?: string }> {
-  const isAuthed = await verifyAdmin()
+): Promise<{ success: boolean; error?: string; version?: number }> {
+  const isAuthed = await isAdminAuthenticated()
   if (!isAuthed) {
     return { success: false, error: "Unauthorized" }
   }
 
+  const parsed = formConfigSchema.safeParse(config)
+  if (!parsed.success)
+    return { success: false, error: parsed.error.issues[0].message }
+
   try {
-    await saveFormConfig(config)
-    revalidatePath("/")
-    return { success: true }
+    const version = await saveFormConfig(parsed.data)
+    revalidatePath("/", "layout")
+    return { success: true, version }
   } catch (error) {
     console.error("[updateFormConfig]", error)
     return { success: false, error: "Failed to save settings" }

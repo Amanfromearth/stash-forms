@@ -1,39 +1,42 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useCallback, useState } from "react"
+import { useCallback, useTransition, useRef } from "react"
 
-export function DownloadCSV() {
+export function DownloadCSV({ version }: { version: number }) {
   const searchParams = useSearchParams()
-  const [loading, setLoading] = useState(false)
+  const [loading, startTransition] = useTransition()
 
-  const download = useCallback(async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      for (const [key, value] of searchParams.entries()) {
-        if (key !== "page") params.set(key, value)
+  const pending = useRef<symbol | null>(null)
+
+  const download = useCallback(() => {
+    if (pending.current) return
+    pending.current = Symbol("csv-export")
+    startTransition(async () => {
+      try {
+        const params = new URLSearchParams()
+        for (const [key, value] of searchParams.entries()) {
+          if (key !== "page") params.set(key, value)
+        }
+        params.set("version", String(version))
+        const qs = params.toString()
+        const url = `/api/admin/export${qs ? `?${qs}` : ""}`
+
+        const res = await fetch(url)
+        if (!res.ok) throw new Error("Export failed")
+
+        const blob = await res.blob()
+        downloadBlob(
+          blob,
+          res.headers
+            .get("Content-Disposition")
+            ?.match(/filename="(.+)"/)?.[1] ?? "submissions.csv"
+        )
+      } finally {
+        pending.current = null
       }
-      const qs = params.toString()
-      const url = `/api/admin/export${qs ? `?${qs}` : ""}`
-
-      const res = await fetch(url)
-      if (!res.ok) throw new Error("Export failed")
-
-      const blob = await res.blob()
-      const a = document.createElement("a")
-      a.href = URL.createObjectURL(blob)
-      a.download =
-        res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] ??
-        "submissions.csv"
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(a.href)
-    } finally {
-      setLoading(false)
-    }
-  }, [searchParams])
+    })
+  }, [searchParams, version])
 
   return (
     <button
@@ -80,4 +83,18 @@ export function DownloadCSV() {
       )}
     </button>
   )
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const objectUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  try {
+    anchor.href = objectUrl
+    anchor.download = filename
+    document.body.appendChild(anchor)
+    anchor.click()
+  } finally {
+    anchor.remove()
+    URL.revokeObjectURL(objectUrl)
+  }
 }
