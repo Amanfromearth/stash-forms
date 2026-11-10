@@ -1,120 +1,115 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { cn } from "@/lib/utils"
+import { m, useReducedMotion } from "motion/react"
+import { InteriorButton } from "@/components/interior/button"
+import { useCopyToClipboard } from "@/components/interior/use-copy-to-clipboard"
+import { CROSSFADE, INSTANT, PRESS } from "@/components/interior/motion"
 
-interface ThankYouScreenProps {
-  onReset?: () => void
-}
-
-export function ThankYouScreen({ onReset }: ThankYouScreenProps) {
-  const [showDialog, setShowDialog] = useState(false)
-  const [isDialogClosing, setIsDialogClosing] = useState(false)
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(window.location.href)
-    setShowDialog(true)
-  }
-
-  const handleCloseDialog = useCallback(() => {
-    setIsDialogClosing(true)
-    setTimeout(() => {
-      setShowDialog(false)
-      setIsDialogClosing(false)
-    }, 150)
-  }, [])
-
+export function ThankYouScreen({ onReset }: { onReset?: () => void }) {
+  const reduced = useReducedMotion()
+  const { copy, status } = useCopyToClipboard()
   return (
-    <>
-      <div className="flex w-full max-w-2xl flex-col items-center gap-8 text-center">
-        <div
-          className="animate-in overflow-hidden rounded-2xl duration-500 zoom-in-95 fade-in"
-          style={{ animationTimingFunction: "var(--ease-out-quint)" }}
+    <div className="flex w-full max-w-2xl flex-col items-center gap-8 text-center">
+      <m.div
+        initial={reduced ? false : { opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={reduced ? INSTANT : PRESS}
+        className="overflow-hidden rounded-2xl"
+      >
+        {/* Preserve the original animated celebration. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHdhdWowdWNhczY1eW9jZTRmNHNkdWZpdGZpZzZreGMwdmo4NGR1byZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/blSTtZehjAZ8I/giphy.gif"
+          alt="Thank you celebration"
+          className="h-48 w-auto max-w-full object-cover"
+        />
+      </m.div>
+      <div className="flex flex-col gap-3">
+        <h1
+          tabIndex={-1}
+          className="font-heading text-4xl leading-tight font-light tracking-tight text-balance md:text-5xl"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHdhdWowdWNhczY1eW9jZTRmNHNkdWZpdGZpZzZreGMwdmo4NGR1byZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/blSTtZehjAZ8I/giphy.gif"
-            alt="Thank you celebration"
-            className="h-48 w-auto object-cover"
-          />
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <h1
-            className="animate-in font-heading text-4xl leading-tight font-light tracking-tight text-balance delay-75 duration-500 fill-mode-both fade-in slide-in-from-bottom-4 md:text-5xl"
-            style={{ animationTimingFunction: "var(--ease-out-quint)" }}
-          >
-            You&apos;re awesome! 🎉
-          </h1>
-          <p
-            className="animate-in text-lg text-pretty text-muted-foreground delay-150 duration-500 fill-mode-both fade-in slide-in-from-bottom-4"
-            style={{ animationTimingFunction: "var(--ease-out-quint)" }}
-          >
-            Your response has been recorded. Thanks for helping us build
-            something better.
-          </p>
-        </div>
-
-        <div
-          className="flex animate-in flex-col items-center gap-3 delay-[225ms] duration-500 fill-mode-both fade-in"
-          style={{ animationTimingFunction: "var(--ease-out-quint)" }}
-        >
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-[transform,background-color] duration-150 hover:bg-accent active:scale-[0.97]"
-          >
-            🔗 Help us reach more people — share this survey
-          </button>
-
-          {onReset ? (
-            <button
-              onClick={onReset}
-              className="w-fit text-sm text-muted-foreground underline underline-offset-4 transition-[transform,color] duration-150 hover:text-foreground active:scale-[0.97]"
-            >
-              Submit another response
-            </button>
-          ) : null}
-        </div>
+          You&apos;re awesome!
+        </h1>
+        <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted-foreground">
+          Your response has been recorded. Thanks for helping us build something
+          better.
+        </p>
       </div>
-
-      {showDialog ? (
-        <div
-          className={cn(
-            "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4",
-            isDialogClosing
-              ? "animate-out duration-150 fill-mode-forwards fade-out"
-              : "animate-in duration-200 fade-in"
-          )}
+      <div className="flex flex-col items-center gap-2">
+        <InteriorButton
+          variant="secondary"
+          aria-label="Share this survey"
+          onClick={() => void copy(new URL("/", window.location.href).href)}
         >
-          <div
-            className={cn(
-              "flex w-full max-w-sm flex-col items-center gap-5 rounded-xl border border-border bg-background p-6 text-center shadow-lg",
-              isDialogClosing
-                ? "animate-out duration-150 fill-mode-forwards zoom-out-95 fade-out"
-                : "animate-in duration-200 zoom-in-95 fade-in"
-            )}
+          <span className="relative grid items-center">
+            {[
+              ["idle", "Share this survey"],
+              ["copied", "Link copied"],
+              ["error", "Try copying again"],
+            ].map(([key, text]) => (
+              <m.span
+                key={key}
+                aria-hidden={status !== key}
+                initial={false}
+                animate={{
+                  opacity: status === key ? 1 : 0,
+                  y: !reduced && status !== key ? 3 : 0,
+                }}
+                transition={reduced ? INSTANT : CROSSFADE}
+                className="col-start-1 row-start-1"
+              >
+                {text}
+              </m.span>
+            ))}
+          </span>
+          <svg
+            aria-hidden="true"
+            className="size-4"
+            viewBox="0 0 16 16"
+            fill="none"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3N2Y0OXFoOHh3dXZrNXJnOWVpbmJqeWx4NTNlZWdvaDh2cm5sbXF4YyZlcD12MV9naWZzX3RyZW5kaW5nJmN0PWc/MDJ9IbxxvDUQM/giphy.gif"
-              alt="Thanks for sharing"
-              className="h-40 w-auto rounded-lg object-cover"
-            />
-            <div className="flex flex-col gap-1">
-              <p className="text-lg font-semibold">Thanks for sharing! 🙌</p>
-              <p className="text-sm text-muted-foreground">
-                Link copied to clipboard
-              </p>
-            </div>
-            <button
-              onClick={handleCloseDialog}
-              className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-[transform,background-color] duration-150 hover:bg-accent active:scale-[0.97]"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </>
+            {status === "copied" ? (
+              <path
+                d="m3 8 3 3 7-7"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ) : (
+              <>
+                <rect
+                  x="6"
+                  y="6"
+                  width="7"
+                  height="7"
+                  rx="1.5"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                />
+                <path
+                  d="M10 6V4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h2"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                />
+              </>
+            )}
+          </svg>
+        </InteriorButton>
+        <p role="status" className="min-h-5 text-xs text-muted-foreground">
+          {status === "copied"
+            ? "Survey link copied to your clipboard."
+            : status === "error"
+              ? "Could not copy the link. You can share the address from your browser."
+              : ""}
+        </p>
+        {onReset && (
+          <InteriorButton onClick={onReset} variant="ghost">
+            Submit another response
+          </InteriorButton>
+        )}
+      </div>
+    </div>
   )
 }

@@ -58,10 +58,10 @@ export function RatingStep({
         />
         <div className="flex w-full max-w-[240px] items-center justify-between">
           <span className="text-xs text-muted-foreground">
-            {question.min} — Poor
+            {question.min}: Poor
           </span>
           <span className="text-xs text-muted-foreground">
-            Excellent — {question.max}
+            Excellent: {question.max}
           </span>
         </div>
       </div>

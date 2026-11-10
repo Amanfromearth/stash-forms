@@ -1,14 +1,9 @@
 import { db } from "@/lib/db"
 import { submissions } from "@/lib/schema"
-import { getFormConfig } from "@/lib/config-loader"
-import { desc, and, gte, lte, sql } from "drizzle-orm"
-
-function escapeCSV(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`
-  }
-  return value
-}
+import { getFormConfig, getFormVersions } from "@/lib/config-loader"
+import { desc, and, eq, gte, lte, sql } from "drizzle-orm"
+import { isAdminAuthenticated } from "@/lib/admin-auth"
+import { escapeCSV } from "@/lib/csv"
 
 function formatValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return ""
@@ -17,14 +12,23 @@ function formatValue(value: unknown): string {
 }
 
 export async function GET(request: Request) {
+  if (!(await isAdminAuthenticated())) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 })
+  }
   const { searchParams } = new URL(request.url)
 
-  const conditions = []
+  const versions = await getFormVersions()
+  const requested = searchParams.get("version")
+  const selected = requested === null ? versions[0]?.version : Number(requested)
+  if (!versions.some((v) => v.version === selected))
+    return new Response("Unknown form version", { status: 404 })
+  const formConfig = await getFormConfig(selected)
+  const conditions = [eq(submissions.formVersion, formConfig.version)]
 
   const q = searchParams.get("q")
   if (q) {
     conditions.push(
-      sql`${submissions.answers}->>'email' ILIKE ${"%" + q.slice(0, 200) + "%"}`
+      sql`${submissions.answers}->>${formConfig.questions.some((q) => q.id === "email") ? "email" : "country"} ILIKE ${"%" + q.slice(0, 200) + "%"}`
     )
   }
 
@@ -67,19 +71,17 @@ export async function GET(request: Request) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
-  const [rows, formConfig] = await Promise.all([
-    db
-      .select({
-        id: submissions.id,
-        isPartial: submissions.isPartial,
-        answers: submissions.answers,
-        submittedAt: submissions.submittedAt,
-      })
-      .from(submissions)
-      .where(whereClause)
-      .orderBy(desc(submissions.submittedAt)),
-    getFormConfig(),
-  ])
+  const rows = await db
+    .select({
+      id: submissions.id,
+      formVersion: submissions.formVersion,
+      isPartial: submissions.isPartial,
+      answers: submissions.answers,
+      submittedAt: submissions.submittedAt,
+    })
+    .from(submissions)
+    .where(whereClause)
+    .orderBy(desc(submissions.submittedAt))
 
   const questions = formConfig.questions.filter(
     (q) => q.type !== "section_header"
@@ -87,6 +89,7 @@ export async function GET(request: Request) {
 
   const headers = [
     "ID",
+    "Form Version",
     "Submitted At",
     "Status",
     ...questions.map((q) => q.label),
@@ -98,6 +101,7 @@ export async function GET(request: Request) {
     const answers = row.answers as Record<string, unknown>
     const line = [
       row.id,
+      `v${row.formVersion}`,
       row.submittedAt.toISOString(),
       row.isPartial ? "Partial" : "Complete",
       ...questions.map((q) => escapeCSV(formatValue(answers[q.id]))),
@@ -111,7 +115,9 @@ export async function GET(request: Request) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="submissions-${date}.csv"`,
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": `attachment; filename="submissions-v${formConfig.version}-${date}.csv"`,
     },
   })
 }

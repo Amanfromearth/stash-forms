@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { logoutAction } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -15,18 +16,18 @@ export default function AdminLayout({
             <div className="flex items-center gap-6">
               <h1 className="text-lg font-semibold">Survey Admin</h1>
               <nav className="flex gap-4 text-sm">
-                <a
+                <Link
                   href="/admin"
                   className="text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Dashboard
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/admin/settings"
                   className="text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Settings
-                </a>
+                </Link>
               </nav>
             </div>
             <form action={logoutAction}>

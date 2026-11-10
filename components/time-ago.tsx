@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import {
   Tooltip,
   TooltipContent,
@@ -44,16 +44,23 @@ function formatUTC(date: Date): string {
   return date.toLocaleString("en-US", { ...DATE_OPTIONS, timeZone: "UTC" })
 }
 
-export function TimeAgo({ date }: { date: Date | string }) {
-  const d = date instanceof Date ? date : new Date(date)
-  const [relative, setRelative] = useState(() => getRelativeTime(d))
-  const [local, setLocal] = useState("")
+function subscribeClock(notify: () => void) {
+  const id = setInterval(notify, 60_000)
+  return () => clearInterval(id)
+}
+const getClockSnapshot = () => Math.floor(Date.now() / 60_000)
+const getServerSnapshot = () => null
 
-  useEffect(() => {
-    setLocal(formatLocal(d))
-    const id = setInterval(() => setRelative(getRelativeTime(d)), 60_000)
-    return () => clearInterval(id)
-  }, [d])
+export function TimeAgo({ date }: { date: Date | string }) {
+  const timestamp = date instanceof Date ? date.getTime() : Date.parse(date)
+  const now = useSyncExternalStore(
+    subscribeClock,
+    getClockSnapshot,
+    getServerSnapshot
+  )
+  const d = new Date(timestamp)
+  const relative = now === null ? "" : getRelativeTime(d)
+  const local = now === null ? `${formatUTC(d)} UTC` : formatLocal(d)
 
   return (
     <Tooltip>

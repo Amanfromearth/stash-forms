@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 32 32"><defs><clipPath id="country-shape"><rect x="1" y="4" width="30" height="24" rx="4"/></clipPath></defs><g clip-path="url(#country-shape)"><svg x="1" y="4" width="30" height="24" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid slice">
+  <path fill="#21468b" d="M0 0h640v480H0z"/>
+  <path fill="#fff" d="M0 0h640v320H0z"/>
+  <path fill="#ae1c28" d="M0 0h640v160H0z"/>
+</svg><path d="M5 4h22a4 4 0 0 1 4 4v1H1V8a4 4 0 0 1 4-4Z" fill="#fff" opacity=".12"/></g><rect x="1.5" y="4.5" width="29" height="23" rx="3.5" fill="none" stroke="#000" opacity=".12"/></svg>
